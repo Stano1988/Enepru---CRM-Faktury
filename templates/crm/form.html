@@ -1,0 +1,1 @@
+{% extends 'base.html' %}{% block content %}<h1>{{ title }}</h1><section class="panel narrow"><form method="post">{% csrf_token %}{{ form.as_p }}<button>Uložit</button> <a href="/">Zpět na přehled</a></form></section>{% endblock %}
