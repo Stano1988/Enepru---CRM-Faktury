@@ -6,14 +6,10 @@ if not exist ".venv\Scripts\python.exe" (
   pause
   exit /b 1
 )
-set /p CRM_LAN_IP=Zadejte IPv4 adresu vaseho PC z prikazu ipconfig (napr. 192.168.1.25): 
+set /p "CRM_LAN_IP=Zadejte IPv4 adresu PC z prikazu ipconfig (napr. 192.168.1.25): "
 if not defined CRM_LAN_IP exit /b 1
-set CRM_DEBUG=1
-set "CRM_ALLOWED_HOSTS=localhost,127.0.0.1,%CRM_LAN_IP%"
-echo Telefon musi byt na stejne duveryhodne Wi-Fi jako PC.
-echo Na telefonu otevrete HTTP adresu tohoto PC s portem 8000.
-echo Pouze testovaci data: toto lokalni spojeni neni sifrovane.
-echo Ve Windows Firewall povolte pouze soukromou sit. Nenastavujte presmerovani portu na routeru.
-echo Pro pristup odkudkoliv bude potreba soukrome nasazeni s HTTPS.
-".venv\Scripts\python.exe" manage.py runserver 0.0.0.0:8000 --noreload
+echo Pouze duveryhodna domaci Wi-Fi. Firewall povolte pouze pro soukromou sit.
+echo Na routeru neotvirejte porty. PC musi zustat zapnuty.
+".venv\Scripts\python.exe" run_crm.py --lan "%CRM_LAN_IP%"
+if errorlevel 1 pause
 endlocal

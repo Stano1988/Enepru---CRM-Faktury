@@ -1,0 +1,1 @@
+{% extends 'crm/public_base.html' %}{% block content %}<h1>{{ title }}</h1><section class="panel narrow"><form method="post" enctype="multipart/form-data">{% csrf_token %}{{ form.as_p }}<button>Odeslat poptávku</button></form><p class="muted">Údaje slouží k vyřízení vašeho požadavku. Nejde o přihlášení k marketingovým zprávám.</p></section>{% endblock %}

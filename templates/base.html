@@ -1,1 +1,16 @@
-{% load static %}<!doctype html><html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Lahodný · CRM</title><link rel="stylesheet" href="{% static 'app.css' %}"></head><body><aside><a class="brand" href="/">L<span>LAHODNÝ<small>PENB & PASPORTY</small></span></a><p class="navlabel">PRACOVNÍ PROSTOR</p><a href="/">◫ Přehled a zakázky</a><a href="{% url 'clients' %}">♙ Klienti</a>{% if user.is_superuser %}<a href="/admin/">⚙ Uživatelé a oprávnění</a>{% endif %}<div class="asidefoot">Vývojová verze · 0.1<br>Fakturace a dokumenty připravujeme</div></aside><div class="workspace"><header><span>Váš pracovní přehled</span>{% if user.is_authenticated %}<div>{{ user.get_full_name|default:user.username }} <form method="post" action="{% url 'logout' %}" class="inline">{% csrf_token %}<button class="quiet">Odhlásit</button></form></div>{% endif %}</header><main>{% block content %}{% endblock %}</main></div></body></html>
+{% load static %}<!doctype html>
+<html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Lahodný · CRM</title><link rel="stylesheet" href="{% static 'app.css' %}"><script src="{% static 'app.js' %}" defer></script></head>
+<body><aside><a class="brand" href="/">L<span>LAHODNÝ<small>PENB & PASPORTY</small></span></a><button class="menu-toggle" type="button" aria-expanded="false" aria-controls="main-menu">Menu</button><nav id="main-menu"><p class="navlabel">PRACOVNÍ PROSTOR</p>
+{% if user.is_authenticated %}
+{% if perms.crm.view_job %}<a href="{% url 'dashboard' %}">◫ Zakázky</a>{% endif %}
+{% if user.is_superuser %}<a href="{% url 'inquiries' %}">↗ Poptávky a nabídky</a>{% endif %}
+{% if perms.crm.view_client %}<a href="{% url 'clients' %}">♙ Klienti a kontakty</a>{% endif %}
+{% if perms.crm.view_property %}<a href="{% url 'properties' %}">⌂ Nemovitosti</a>{% endif %}
+{% if perms.crm.view_task %}<a href="{% url 'calendar' %}">▦ Kalendář a úkoly</a>{% endif %}
+<a href="{% url 'archives' %}">Archiv zakázek</a>{% if can_finance %}<a href="{% url 'invoices' %}">Kč Faktury a úhrady</a>{% endif %}
+{% if user.is_superuser %}
+<a href="{% url 'bank_transactions' %}">⇄ Bankovní platby</a><a href="{% url 'outbox' %}">✉ Komunikace</a><a href="{% url 'reports' %}">▥ Reporty</a><a href="{% url 'catalog' %}">Ceník služeb</a><a href="{% url 'settings' %}">⚙ Nastavení firmy</a><a href="{% url 'users' %}">Uživatelé a oprávnění</a><a href="/admin/">Automatizace a skupiny</a>
+{% endif %}<a href="{% url 'profile' %}">Můj profil</a><a href="{% url 'password_change' %}">Změnit heslo</a><a href="{% url 'mfa_setup' %}">Zabezpečení účtu</a>{% endif %}
+</nav><div class="asidefoot">Lahodný CRM · pracovní verze</div></aside>
+<div class="workspace"><header><span>PENB · pasporty · vaše podnikání</span>{% if user.is_authenticated %}<div>{{ user.get_full_name|default:user.username }}<form method="post" action="{% url 'logout' %}" class="inline">{% csrf_token %}<button class="quiet">Odhlásit</button></form></div>{% endif %}</header>
+<main>{% for message in messages %}<div role="status" class="notice {{ message.tags }}">{{ message }}</div>{% endfor %}{% block content %}{% endblock %}</main></div></body></html>

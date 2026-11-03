@@ -1,30 +1,37 @@
-# Pokračování práce — 3. 11. 2026
+# Pokračování práce — aktuální stav 3. 11. 2026
 
-## Aktuální požadavek uživatele
+## Pokyn uživatele
 
-Nyní práci přerušit, uložit kontext a příště pokračovat. Priorita příštího sezení: umožnit majiteli aplikaci skutečně prohlížet a ovládat. Neslibovat běh práce na pozadí mezi sezeními.
+Majitel chce dokončit celé CRM podle konverzace, ne pouze vizuální prototyp. Poslední instrukce: pokračovat a doplnit vše. Má Windows a Android a chce jednoduché bezplatné prohlížení. Nemusí zadání opakovat. Neříkat, že je hotové celé zadání, dokud zbývají položky v FEATURES.md.
 
-## Projekt a ověřený stav
+## Aktuální implementace
 
-Repozitář /workspace/Enepru---CRM-Faktury byl prázdný, bez commitů. Vytvořen Django 5.2.18 projekt, SQLite, české serverové HTML, responzivní CSS. Zdrojové soubory dosud nejsou commitnuté; neodstraňovat je. Podrobnosti README.md a ROADMAP.md.
+Django 5.2.18, SQLite s IMMEDIATE transakcemi, Waitress a WhiteNoise. Spouštěče Windows automaticky připraví databázi, soubory a účet; žádné výchozí heslo. Responzivní mobilní menu. Aplikace je stále pracovní verze bez veřejného hostingu.
 
-Implementováno: přihlášení/odhlášení, Django správa účtů a modelových práv, založení a seznam klientů, založení/seznam/detail/úprava zakázky, hledání a filtr stavu, termín a prodlení, odpovědný pracovník, další krok, popis s historií změn, interní poznámky s autorem a časem. Nesprávce s potřebným oprávněním vidí pouze přidělené zakázky a jejich klienty. Zakládání a přidělování zakázek pouze správce. Jemná oprávnění ještě nejsou dokončená.
+Fungují klienti/kontakty/nemovitosti, poptávky z formuláře s přílohami, verzované nabídky, klientské potvrzení a převod na zakázku, dokumenty a verze/koš/sdílení, klientské odkazy, úkoly a měsíční kalendář, vícepráce, fakturační návrhy/PDF/QR, zálohová výzva a jedno zálohové vyúčtování, úhrady/refundace, oprava chybného přiřazení, CSV banky, příprava upomínek, e-mailová fronta, náklady, reporty, předání, archiv se snapshotem a kontrolními součty, zálohy a obnova, uživatelská práva a MFA.
 
-Prošlo 6 Django testů, system check a kontrola migrací. Skutečný HTTP požadavek na login i CSS vrátil 200 a očekávaný obsah. Žádný správce ani výchozí heslo nejsou vytvořené. Lokální databáze obsahuje pouze migrace, testovací data se po testech odstranila. Nezaměňovat funkční vývojový základ za kompletní CRM nebo produkční nasazení.
+Přesný stav, nedodělané funkce a externí předpoklady jsou v docs/FEATURES.md. Není připojené skutečné SMTP ani bankovní API a není nasazeno na veřejné adrese. ARES je připravený, testovaný pouze mockem. Windows/Android zařízení majitele zatím neověřeno.
 
-Vývojový server byl spuštěn na 127.0.0.1:8000; proces nemusí přežít přerušení. Sandbox pro síť a naslouchání vyžadoval require_escalated. Standardní Git proxy funguje při eskalaci, git ls-remote vrátil úspěch bez refs (prázdný remote).
+## Kontroly
 
-Install_script a start_skill uloženy do draftu cloud prostředí. Nástroj potvrdil status saved, requires_publish=true. Uživatel byl informován o potřebě kontroly, uložení a publikace. Publikace nebyla potvrzena.
+40 automatických testů, kontrola Django a migrací. Skutečný Chromium desktop i mobilní rozměr, přihlášení a funkční průchod zakázka → předvyplněná faktura → vystavení → úhrada. České PDF zkontrolováno přes pypdf. 12 souběžných zakázek/faktur v izolované SQLite bez duplicit. Ověřená záloha a obnova do nové složky. Nástroje pro browser/PDF/lint jsou v /tmp/crm-review-tools, nejsou běhovými závislostmi aplikace.
 
-## Možnosti prohlížení — vyřešit před dalšími rozsáhlými funkcemi
+Při browser kontrole byly nalezeny a opraveny dvě chyby: hlavička Referrer-Policy no-referrer bránila HTTP loginu (používá se same-origin); předvyplněné extra řádky faktury byly při POST považovány za prázdné (initial se předává pouze na GET). Mají regresní testy. Při změnách fakturačního formuláře znovu zkontrolovat skutečný browser.
 
-Onboarding skill zakazuje uživatelské localhost preview odkazy, UI tohoto prostředí je nepodporuje. Neříkat, že aplikaci nelze používat obecně: omezení se týká přímého náhledu této cloudové mašiny. Nezveřejňovat DEBUG server ani nepoužívat tunel k obcházení síťové politiky.
+Ukázkové screenshoty v docs/screenshots obsahují pouze smyšlené klienty. Kontrolní databáze /tmp/crm-review.sqlite3 je oddělená od aplikace. Kontrolní účty/hesla nepatří do Gitu ani do zpráv uživateli. Do hlavní lokální databáze nebyl založen správce ani vložena demo klientská data.
 
-Možnost A: bezpečně exportovat aktuální zdrojové soubory jako ZIP bez .venv, db.sqlite3, .local-secret, hesel a tajných údajů. Uživatel může spustit CRM na vlastním PC s Pythonem a vytvořit vlastní účet; localhost bude pak na jeho PC. Případně připravit jednoduché spouštěcí skripty pro jeho OS, až bude znám.
+## Další postup
 
-Možnost B: soukromé testovací nasazení s HTTPS, DEBUG=0, správně omezenými hosty, produkčním WSGI serverem, statickými soubory, bezpečným účtem a přístupem. Nejprve ověřit dostupný hosting a oprávnění k nasazení; nevymýšlet veřejnou URL ani tvrdit nasazení bez důkazu. Před reálnými klientskými daty doplnit ochranu přihlášení, MFA, zálohy a obnovu, granulární práva a produkční databázi.
+1. Navázat podle nedokončených položek FEATURES.md, zejména opravné doklady/import externích faktur, nabídka PDF a připomínky, pokročilé reporty a oprávnění.
+2. S majitelem ověřit instalaci na Windows a Android; případně připravit soukromý HTTPS hosting. Nezaměňovat GitHub se spuštěnou aplikací, nevymýšlet veřejnou URL.
+3. SMTP nastavit bezpečně v cílovém prostředí. Hesla nechtít do chatu. Konkrétní bankovní formát/API ověřit až s dostupnými podklady.
+4. Před ostrými daty uzavřít bezpečnostní, účetní a archivační ověření a oddělené automatické zálohy.
 
-Příště nejprve zjistit, zda chce uživatel lokální spuštění (a jeho OS), nebo dostupný hosting. Lze nezávisle připravit export a provozní dokumentaci. Žádné přístupové údaje nevyžadovat do chatu.
+Uživatel autorizoval ukládání a odesílání projektu na GitHub main. Žádné force-push. Zachovat lokální databázi, media a .local-secret; nejsou sledované v Gitu. Cloudové instalační a startovací instrukce jsou v návrhu prostředí; publikaci provádí uživatel, nebyla potvrzena. Používat existující checkout, nevytvářet worktree.
+
+## Dokumentace
+
+README.md, docs/WINDOWS.md, docs/OPERATIONS.md, docs/FEATURES.md. Informace z původní domluvy následují níže; při rozporu o implementaci platí aktuální FEATURES.md a skutečný kód.
 
 ## Závazné požadavky majitele
 
