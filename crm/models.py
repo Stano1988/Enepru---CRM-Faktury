@@ -717,6 +717,7 @@ class Message(models.Model):
         related_name="messages",
     )
     offer = models.ForeignKey(Offer, null=True, blank=True, on_delete=models.PROTECT)
+    in_reply_to = models.CharField(max_length=998, blank=True, editable=False)
     message_id = models.CharField(max_length=998, null=True, blank=True, unique=True)
     to = models.EmailField("Příjemce")
     subject = models.CharField("Předmět", max_length=250)
@@ -874,6 +875,15 @@ class CalendarEntry(models.Model):
 
 
 class ReceivedMail(models.Model):
+    invoice = models.ForeignKey(
+        Invoice, null=True, blank=True, on_delete=models.PROTECT, related_name="mail"
+    )
+    is_received = models.BooleanField(default=True)
+    is_sent = models.BooleanField(default=False)
+    recipients = models.JSONField(default=list, blank=True)
+    job = models.ForeignKey(
+        Job, null=True, blank=True, on_delete=models.PROTECT, related_name="mail"
+    )
     structured = models.JSONField(default=dict, blank=True)
     structured_verified = models.BooleanField(default=False)
     structured_error = models.CharField(max_length=300, blank=True)

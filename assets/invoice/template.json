@@ -1,0 +1,2872 @@
+{
+  "source_sha256": "1f070c7ce0850538552abecca222e5a7b2b456beac47f2f913ac397bb4145fe4",
+  "columns": {
+    "1": 1.85546875,
+    "2": 5.28515625,
+    "3": 28.42578125,
+    "4": 10.140625,
+    "5": 12.42578125,
+    "6": 11.140625,
+    "7": 10.42578125,
+    "8": 8.7109375,
+    "9": 13.0
+  },
+  "rows": {
+    "3": 27.75,
+    "4": 13.7,
+    "5": 12.75,
+    "6": 12.0,
+    "7": 21.0,
+    "8": 15.75,
+    "9": 18.75,
+    "10": 16.5,
+    "11": 15.75,
+    "12": 15.75,
+    "13": 15.0,
+    "14": 14.25,
+    "15": 15.2,
+    "16": 13.5,
+    "17": 16.5,
+    "18": 12.75,
+    "19": 18.0,
+    "20": 18.0,
+    "21": 19.5,
+    "22": 16.5,
+    "23": 16.5,
+    "24": 16.5,
+    "25": 16.5,
+    "26": 16.5,
+    "27": 16.5,
+    "28": 16.5,
+    "29": 18.0,
+    "30": 15.0,
+    "31": 18.0,
+    "32": 21.75,
+    "33": 21.75,
+    "34": 12.75,
+    "35": 12.75,
+    "36": 12.75,
+    "37": 12.75,
+    "38": 12.75,
+    "39": 13.5,
+    "40": 13.5,
+    "41": 15.0,
+    "42": 15.0,
+    "43": 15.0,
+    "44": 15.0,
+    "45": 15.0,
+    "46": 12.75,
+    "47": 13.5,
+    "48": 16.5,
+    "49": 16.5
+  },
+  "fonts": [
+    {
+      "size": 10.0,
+      "bold": false,
+      "underline": false
+    },
+    {
+      "size": 12.0,
+      "bold": true,
+      "underline": false
+    },
+    {
+      "size": 10.0,
+      "bold": false,
+      "underline": false
+    },
+    {
+      "size": 14.0,
+      "bold": false,
+      "underline": false
+    },
+    {
+      "size": 11.0,
+      "bold": false,
+      "underline": false
+    },
+    {
+      "size": 10.0,
+      "bold": false,
+      "underline": true
+    },
+    {
+      "size": 12.0,
+      "bold": false,
+      "underline": false
+    },
+    {
+      "size": 9.0,
+      "bold": false,
+      "underline": false
+    },
+    {
+      "size": 11.0,
+      "bold": true,
+      "underline": false
+    },
+    {
+      "size": 9.0,
+      "bold": true,
+      "underline": false
+    },
+    {
+      "size": 8.0,
+      "bold": false,
+      "underline": false
+    },
+    {
+      "size": 18.0,
+      "bold": false,
+      "underline": false
+    },
+    {
+      "size": 18.0,
+      "bold": true,
+      "underline": false
+    },
+    {
+      "size": 10.0,
+      "bold": true,
+      "underline": false
+    },
+    {
+      "size": 10.0,
+      "bold": false,
+      "underline": false
+    },
+    {
+      "size": 7.0,
+      "bold": true,
+      "underline": false
+    },
+    {
+      "size": 10.0,
+      "bold": false,
+      "underline": false
+    }
+  ],
+  "borders": [
+    {},
+    {
+      "left": "medium",
+      "top": "medium"
+    },
+    {
+      "top": "medium"
+    },
+    {
+      "right": "medium",
+      "top": "medium"
+    },
+    {
+      "left": "medium"
+    },
+    {
+      "right": "medium"
+    },
+    {
+      "left": "medium",
+      "bottom": "medium"
+    },
+    {
+      "bottom": "medium"
+    },
+    {
+      "right": "medium",
+      "bottom": "medium"
+    },
+    {
+      "left": "medium",
+      "right": "medium",
+      "top": "medium",
+      "bottom": "medium"
+    },
+    {
+      "left": "medium",
+      "top": "medium",
+      "bottom": "medium"
+    },
+    {
+      "right": "medium",
+      "top": "medium",
+      "bottom": "medium"
+    },
+    {
+      "left": "medium",
+      "right": "medium",
+      "bottom": "medium"
+    },
+    {
+      "right": "medium"
+    },
+    {
+      "bottom": "medium"
+    },
+    {
+      "right": "medium",
+      "bottom": "medium"
+    }
+  ],
+  "styles": [
+    {
+      "font": 0,
+      "border": 0,
+      "alignment": {},
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 0,
+      "alignment": {},
+      "format": 0
+    },
+    {
+      "font": 4,
+      "border": 0,
+      "alignment": {},
+      "format": 0
+    },
+    {
+      "font": 4,
+      "border": 0,
+      "alignment": {
+        "vertical": "center"
+      },
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 0,
+      "alignment": {},
+      "format": 14
+    },
+    {
+      "font": 8,
+      "border": 0,
+      "alignment": {
+        "horizontal": "left"
+      },
+      "format": 3
+    },
+    {
+      "font": 8,
+      "border": 0,
+      "alignment": {
+        "horizontal": "left",
+        "vertical": "center",
+        "indent": "1"
+      },
+      "format": 0
+    },
+    {
+      "font": 4,
+      "border": 0,
+      "alignment": {
+        "horizontal": "left"
+      },
+      "format": 0
+    },
+    {
+      "font": 9,
+      "border": 0,
+      "alignment": {},
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 0,
+      "alignment": {
+        "horizontal": "left"
+      },
+      "format": 0
+    },
+    {
+      "font": 3,
+      "border": 0,
+      "alignment": {
+        "horizontal": "right",
+        "vertical": "center"
+      },
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 1,
+      "alignment": {},
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 2,
+      "alignment": {},
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 3,
+      "alignment": {},
+      "format": 0
+    },
+    {
+      "font": 5,
+      "border": 4,
+      "alignment": {
+        "horizontal": "left",
+        "indent": "2"
+      },
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 4,
+      "alignment": {},
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 5,
+      "alignment": {},
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 6,
+      "alignment": {},
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 7,
+      "alignment": {},
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 8,
+      "alignment": {},
+      "format": 0
+    },
+    {
+      "font": 8,
+      "border": 4,
+      "alignment": {
+        "horizontal": "left",
+        "indent": "2"
+      },
+      "format": 0
+    },
+    {
+      "font": 8,
+      "border": 9,
+      "alignment": {
+        "horizontal": "left",
+        "vertical": "center"
+      },
+      "format": 14
+    },
+    {
+      "font": 8,
+      "border": 0,
+      "alignment": {
+        "vertical": "center"
+      },
+      "format": 14
+    },
+    {
+      "font": 2,
+      "border": 5,
+      "alignment": {
+        "horizontal": "left"
+      },
+      "format": 14
+    },
+    {
+      "font": 2,
+      "border": 5,
+      "alignment": {
+        "horizontal": "left"
+      },
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 9,
+      "alignment": {
+        "horizontal": "center",
+        "vertical": "center"
+      },
+      "format": 0
+    },
+    {
+      "font": 3,
+      "border": 0,
+      "alignment": {
+        "horizontal": "left",
+        "vertical": "center",
+        "indent": "3"
+      },
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 0,
+      "alignment": {},
+      "format": 2
+    },
+    {
+      "font": 2,
+      "border": 10,
+      "alignment": {
+        "horizontal": "center",
+        "vertical": "center"
+      },
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 9,
+      "alignment": {
+        "vertical": "center"
+      },
+      "format": 0
+    },
+    {
+      "font": 1,
+      "border": 0,
+      "alignment": {
+        "vertical": "center"
+      },
+      "format": 2
+    },
+    {
+      "font": 2,
+      "border": 5,
+      "alignment": {
+        "horizontal": "center"
+      },
+      "format": 2
+    },
+    {
+      "font": 5,
+      "border": 4,
+      "alignment": {
+        "horizontal": "center"
+      },
+      "format": 0
+    },
+    {
+      "font": 13,
+      "border": 2,
+      "alignment": {},
+      "format": 0
+    },
+    {
+      "font": 13,
+      "border": 2,
+      "alignment": {
+        "horizontal": "center"
+      },
+      "format": 0
+    },
+    {
+      "font": 13,
+      "border": 3,
+      "alignment": {
+        "horizontal": "center",
+        "vertical": "center"
+      },
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 0,
+      "alignment": {
+        "horizontal": "center",
+        "vertical": "center"
+      },
+      "format": 2
+    },
+    {
+      "font": 2,
+      "border": 0,
+      "alignment": {
+        "horizontal": "center",
+        "vertical": "center"
+      },
+      "format": 9
+    },
+    {
+      "font": 2,
+      "border": 0,
+      "alignment": {
+        "vertical": "center"
+      },
+      "format": 2
+    },
+    {
+      "font": 2,
+      "border": 0,
+      "alignment": {
+        "horizontal": "center",
+        "vertical": "center"
+      },
+      "format": 0
+    },
+    {
+      "font": 13,
+      "border": 0,
+      "alignment": {
+        "vertical": "center"
+      },
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 5,
+      "alignment": {
+        "horizontal": "center",
+        "vertical": "center"
+      },
+      "format": 2
+    },
+    {
+      "font": 2,
+      "border": 0,
+      "alignment": {
+        "horizontal": "center",
+        "vertical": "center"
+      },
+      "format": 1
+    },
+    {
+      "font": 2,
+      "border": 4,
+      "alignment": {
+        "vertical": "center"
+      },
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 5,
+      "alignment": {
+        "horizontal": "right",
+        "vertical": "center"
+      },
+      "format": 2
+    },
+    {
+      "font": 2,
+      "border": 7,
+      "alignment": {
+        "horizontal": "center",
+        "vertical": "center"
+      },
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 12,
+      "alignment": {
+        "horizontal": "center",
+        "vertical": "center"
+      },
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 0,
+      "alignment": {},
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 5,
+      "alignment": {},
+      "format": 0
+    },
+    {
+      "font": 15,
+      "border": 0,
+      "alignment": {
+        "vertical": "top",
+        "wrapText": "1"
+      },
+      "format": 0
+    },
+    {
+      "font": 15,
+      "border": 13,
+      "alignment": {
+        "vertical": "top",
+        "wrapText": "1"
+      },
+      "format": 0
+    },
+    {
+      "font": 15,
+      "border": 14,
+      "alignment": {
+        "vertical": "top",
+        "wrapText": "1"
+      },
+      "format": 0
+    },
+    {
+      "font": 13,
+      "border": 0,
+      "alignment": {},
+      "format": 0
+    },
+    {
+      "font": 13,
+      "border": 5,
+      "alignment": {},
+      "format": 0
+    },
+    {
+      "font": 13,
+      "border": 14,
+      "alignment": {
+        "horizontal": "left",
+        "vertical": "top",
+        "wrapText": "1"
+      },
+      "format": 0
+    },
+    {
+      "font": 13,
+      "border": 15,
+      "alignment": {
+        "horizontal": "left",
+        "vertical": "top",
+        "wrapText": "1"
+      },
+      "format": 0
+    },
+    {
+      "font": 6,
+      "border": 0,
+      "alignment": {
+        "horizontal": "center",
+        "vertical": "center"
+      },
+      "format": 0
+    },
+    {
+      "font": 3,
+      "border": 0,
+      "alignment": {
+        "horizontal": "center",
+        "vertical": "center"
+      },
+      "format": 0
+    },
+    {
+      "font": 12,
+      "border": 0,
+      "alignment": {
+        "horizontal": "left"
+      },
+      "format": 0
+    },
+    {
+      "font": 13,
+      "border": 0,
+      "alignment": {
+        "horizontal": "left"
+      },
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 10,
+      "alignment": {
+        "horizontal": "left",
+        "vertical": "center"
+      },
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 11,
+      "alignment": {
+        "horizontal": "left",
+        "vertical": "center"
+      },
+      "format": 0
+    },
+    {
+      "font": 1,
+      "border": 0,
+      "alignment": {
+        "horizontal": "left"
+      },
+      "format": 0
+    },
+    {
+      "font": 4,
+      "border": 0,
+      "alignment": {
+        "horizontal": "left"
+      },
+      "format": 0
+    },
+    {
+      "font": 7,
+      "border": 0,
+      "alignment": {
+        "horizontal": "left"
+      },
+      "format": 0
+    },
+    {
+      "font": 10,
+      "border": 6,
+      "alignment": {
+        "horizontal": "left"
+      },
+      "format": 0
+    },
+    {
+      "font": 10,
+      "border": 7,
+      "alignment": {
+        "horizontal": "left"
+      },
+      "format": 0
+    },
+    {
+      "font": 10,
+      "border": 4,
+      "alignment": {
+        "horizontal": "left"
+      },
+      "format": 0
+    },
+    {
+      "font": 10,
+      "border": 0,
+      "alignment": {
+        "horizontal": "left"
+      },
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 0,
+      "alignment": {
+        "horizontal": "center"
+      },
+      "format": 0
+    },
+    {
+      "font": 12,
+      "border": 3,
+      "alignment": {
+        "horizontal": "left",
+        "vertical": "center"
+      },
+      "format": 0
+    },
+    {
+      "font": 13,
+      "border": 8,
+      "alignment": {
+        "horizontal": "left",
+        "vertical": "center"
+      },
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 4,
+      "alignment": {
+        "horizontal": "left"
+      },
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 5,
+      "alignment": {
+        "horizontal": "left"
+      },
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 6,
+      "alignment": {
+        "horizontal": "left"
+      },
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 8,
+      "alignment": {
+        "horizontal": "left"
+      },
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 4,
+      "alignment": {
+        "horizontal": "center"
+      },
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 5,
+      "alignment": {
+        "horizontal": "center"
+      },
+      "format": 0
+    },
+    {
+      "font": 11,
+      "border": 2,
+      "alignment": {
+        "horizontal": "center",
+        "vertical": "center"
+      },
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 2,
+      "alignment": {
+        "horizontal": "center",
+        "vertical": "center"
+      },
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 3,
+      "alignment": {
+        "horizontal": "center",
+        "vertical": "center"
+      },
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 7,
+      "alignment": {
+        "horizontal": "center",
+        "vertical": "center"
+      },
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 8,
+      "alignment": {
+        "horizontal": "center",
+        "vertical": "center"
+      },
+      "format": 0
+    },
+    {
+      "font": 12,
+      "border": 1,
+      "alignment": {
+        "horizontal": "right",
+        "vertical": "center"
+      },
+      "format": 2
+    },
+    {
+      "font": 12,
+      "border": 2,
+      "alignment": {
+        "horizontal": "right",
+        "vertical": "center"
+      },
+      "format": 0
+    },
+    {
+      "font": 12,
+      "border": 6,
+      "alignment": {
+        "horizontal": "right",
+        "vertical": "center"
+      },
+      "format": 0
+    },
+    {
+      "font": 12,
+      "border": 7,
+      "alignment": {
+        "horizontal": "right",
+        "vertical": "center"
+      },
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 1,
+      "alignment": {
+        "horizontal": "left"
+      },
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 3,
+      "alignment": {
+        "horizontal": "left"
+      },
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 0,
+      "alignment": {
+        "horizontal": "left"
+      },
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 4,
+      "alignment": {
+        "horizontal": "left",
+        "vertical": "center"
+      },
+      "format": 0
+    },
+    {
+      "font": 2,
+      "border": 0,
+      "alignment": {
+        "horizontal": "left",
+        "vertical": "center"
+      },
+      "format": 0
+    }
+  ],
+  "cells": [
+    {
+      "ref": "B3",
+      "style": 58,
+      "text": "Faktura    "
+    },
+    {
+      "ref": "C3",
+      "style": 59,
+      "text": ""
+    },
+    {
+      "ref": "D3",
+      "style": 10,
+      "text": ""
+    },
+    {
+      "ref": "E3",
+      "style": 10,
+      "text": ""
+    },
+    {
+      "ref": "F3",
+      "style": 10,
+      "text": ""
+    },
+    {
+      "ref": "G3",
+      "style": 26,
+      "text": "          "
+    },
+    {
+      "ref": "H3",
+      "style": 56,
+      "text": ""
+    },
+    {
+      "ref": "I3",
+      "style": 57,
+      "text": ""
+    },
+    {
+      "ref": "B4",
+      "style": 11,
+      "text": ""
+    },
+    {
+      "ref": "C4",
+      "style": 12,
+      "text": ""
+    },
+    {
+      "ref": "D4",
+      "style": 12,
+      "text": ""
+    },
+    {
+      "ref": "E4",
+      "style": 12,
+      "text": ""
+    },
+    {
+      "ref": "F4",
+      "style": 11,
+      "text": ""
+    },
+    {
+      "ref": "G4",
+      "style": 12,
+      "text": ""
+    },
+    {
+      "ref": "H4",
+      "style": 12,
+      "text": ""
+    },
+    {
+      "ref": "I4",
+      "style": 13,
+      "text": ""
+    },
+    {
+      "ref": "B5",
+      "style": 14,
+      "text": "Dodavatel:"
+    },
+    {
+      "ref": "C5",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "D5",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "E5",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F5",
+      "style": 32,
+      "text": " Odběratel:"
+    },
+    {
+      "ref": "G5",
+      "style": 9,
+      "text": "  "
+    },
+    {
+      "ref": "H5",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "I5",
+      "style": 16,
+      "text": ""
+    },
+    {
+      "ref": "B6",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "C6",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "D6",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "E6",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F6",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "G6",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "H6",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "I6",
+      "style": 16,
+      "text": ""
+    },
+    {
+      "ref": "B7",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "C7",
+      "style": 62,
+      "text": ""
+    },
+    {
+      "ref": "D7",
+      "style": 62,
+      "text": ""
+    },
+    {
+      "ref": "E7",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F7",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "G7",
+      "style": 47,
+      "text": ""
+    },
+    {
+      "ref": "H7",
+      "style": 47,
+      "text": ""
+    },
+    {
+      "ref": "I7",
+      "style": 48,
+      "text": ""
+    },
+    {
+      "ref": "B8",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "C8",
+      "style": 63,
+      "text": ""
+    },
+    {
+      "ref": "D8",
+      "style": 63,
+      "text": ""
+    },
+    {
+      "ref": "E8",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F8",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "G8",
+      "style": 47,
+      "text": ""
+    },
+    {
+      "ref": "H8",
+      "style": 47,
+      "text": ""
+    },
+    {
+      "ref": "I8",
+      "style": 48,
+      "text": ""
+    },
+    {
+      "ref": "B9",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "C9",
+      "style": 63,
+      "text": ""
+    },
+    {
+      "ref": "D9",
+      "style": 63,
+      "text": ""
+    },
+    {
+      "ref": "E9",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F9",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "G9",
+      "style": 47,
+      "text": ""
+    },
+    {
+      "ref": "H9",
+      "style": 52,
+      "text": ""
+    },
+    {
+      "ref": "I9",
+      "style": 53,
+      "text": ""
+    },
+    {
+      "ref": "B10",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "C10",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "D10",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "E10",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F10",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "G10",
+      "style": 47,
+      "text": ""
+    },
+    {
+      "ref": "H10",
+      "style": 47,
+      "text": ""
+    },
+    {
+      "ref": "I10",
+      "style": 48,
+      "text": ""
+    },
+    {
+      "ref": "B11",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "C11",
+      "style": 3,
+      "text": ""
+    },
+    {
+      "ref": "D11",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "E11",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F11",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "G11",
+      "style": 47,
+      "text": ""
+    },
+    {
+      "ref": "H11",
+      "style": 47,
+      "text": ""
+    },
+    {
+      "ref": "I11",
+      "style": 48,
+      "text": ""
+    },
+    {
+      "ref": "B12",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "C12",
+      "style": 64,
+      "text": ""
+    },
+    {
+      "ref": "D12",
+      "style": 64,
+      "text": ""
+    },
+    {
+      "ref": "E12",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F12",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "G12",
+      "style": 47,
+      "text": ""
+    },
+    {
+      "ref": "H12",
+      "style": 47,
+      "text": ""
+    },
+    {
+      "ref": "I12",
+      "style": 48,
+      "text": ""
+    },
+    {
+      "ref": "B13",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "C13",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "D13",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "E13",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F13",
+      "style": 15,
+      "text": "   "
+    },
+    {
+      "ref": "G13",
+      "style": 69,
+      "text": ""
+    },
+    {
+      "ref": "H13",
+      "style": 69,
+      "text": ""
+    },
+    {
+      "ref": "I13",
+      "style": 16,
+      "text": ""
+    },
+    {
+      "ref": "B14",
+      "style": 67,
+      "text": "   Živnostenský list vydaný ve Velkém Meziříčí dne 22.5.2024"
+    },
+    {
+      "ref": "C14",
+      "style": 68,
+      "text": ""
+    },
+    {
+      "ref": "D14",
+      "style": 68,
+      "text": ""
+    },
+    {
+      "ref": "E14",
+      "style": 68,
+      "text": ""
+    },
+    {
+      "ref": "F14",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "G14",
+      "style": 69,
+      "text": ""
+    },
+    {
+      "ref": "H14",
+      "style": 69,
+      "text": ""
+    },
+    {
+      "ref": "I14",
+      "style": 16,
+      "text": ""
+    },
+    {
+      "ref": "A15",
+      "style": 0,
+      "text": "  "
+    },
+    {
+      "ref": "B15",
+      "style": 65,
+      "text": "   Číslo jednací:ŽIV/34303/2024-brabc"
+    },
+    {
+      "ref": "C15",
+      "style": 66,
+      "text": ""
+    },
+    {
+      "ref": "D15",
+      "style": 66,
+      "text": ""
+    },
+    {
+      "ref": "E15",
+      "style": 18,
+      "text": ""
+    },
+    {
+      "ref": "F15",
+      "style": 17,
+      "text": ""
+    },
+    {
+      "ref": "G15",
+      "style": 18,
+      "text": " "
+    },
+    {
+      "ref": "H15",
+      "style": 18,
+      "text": ""
+    },
+    {
+      "ref": "I15",
+      "style": 19,
+      "text": ""
+    },
+    {
+      "ref": "B16",
+      "style": 11,
+      "text": ""
+    },
+    {
+      "ref": "C16",
+      "style": 12,
+      "text": ""
+    },
+    {
+      "ref": "D16",
+      "style": 12,
+      "text": ""
+    },
+    {
+      "ref": "E16",
+      "style": 12,
+      "text": ""
+    },
+    {
+      "ref": "F16",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "G16",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "H16",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "I16",
+      "style": 16,
+      "text": ""
+    },
+    {
+      "ref": "B17",
+      "style": 20,
+      "text": "Platební podmínky:"
+    },
+    {
+      "ref": "C17",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "D17",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "E17",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F17",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "G17",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "H17",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "I17",
+      "style": 16,
+      "text": ""
+    },
+    {
+      "ref": "B18",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "C18",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "D18",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "E18",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F18",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "G18",
+      "style": 89,
+      "text": "Datum vystavení:"
+    },
+    {
+      "ref": "H18",
+      "style": 89,
+      "text": ""
+    },
+    {
+      "ref": "I18",
+      "style": 23,
+      "text": ""
+    },
+    {
+      "ref": "B19",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "C19",
+      "style": 2,
+      "text": "Forma úhrady"
+    },
+    {
+      "ref": "D19",
+      "style": 2,
+      "text": ""
+    },
+    {
+      "ref": "E19",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F19",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "G19",
+      "style": 89,
+      "text": "Datum zdanitel. plnění"
+    },
+    {
+      "ref": "H19",
+      "style": 89,
+      "text": ""
+    },
+    {
+      "ref": "I19",
+      "style": 23,
+      "text": ""
+    },
+    {
+      "ref": "B20",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "C20",
+      "style": 2,
+      "text": "Bankovní spojení:"
+    },
+    {
+      "ref": "D20",
+      "style": 2,
+      "text": ""
+    },
+    {
+      "ref": "E20",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F20",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "G20",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "H20",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "I20",
+      "style": 24,
+      "text": ""
+    },
+    {
+      "ref": "B21",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "C21",
+      "style": 2,
+      "text": "Číslo účtu:"
+    },
+    {
+      "ref": "D21",
+      "style": 5,
+      "text": ""
+    },
+    {
+      "ref": "E21",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F21",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "G21",
+      "style": 6,
+      "text": "Splatnost:"
+    },
+    {
+      "ref": "H21",
+      "style": 22,
+      "text": ""
+    },
+    {
+      "ref": "I21",
+      "style": 21,
+      "text": ""
+    },
+    {
+      "ref": "B22",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "C22",
+      "style": 2,
+      "text": "Variabilní symbol:"
+    },
+    {
+      "ref": "D22",
+      "style": 7,
+      "text": ""
+    },
+    {
+      "ref": "E22",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F22",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "G22",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "H22",
+      "style": 4,
+      "text": ""
+    },
+    {
+      "ref": "I22",
+      "style": 16,
+      "text": ""
+    },
+    {
+      "ref": "B23",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "C23",
+      "style": 2,
+      "text": ""
+    },
+    {
+      "ref": "D23",
+      "style": 7,
+      "text": ""
+    },
+    {
+      "ref": "E23",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F23",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "G23",
+      "style": 49,
+      "text": ""
+    },
+    {
+      "ref": "H23",
+      "style": 49,
+      "text": ""
+    },
+    {
+      "ref": "I23",
+      "style": 50,
+      "text": ""
+    },
+    {
+      "ref": "B24",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "C24",
+      "style": 2,
+      "text": ""
+    },
+    {
+      "ref": "D24",
+      "style": 7,
+      "text": ""
+    },
+    {
+      "ref": "E24",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F24",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "G24",
+      "style": 49,
+      "text": ""
+    },
+    {
+      "ref": "H24",
+      "style": 49,
+      "text": ""
+    },
+    {
+      "ref": "I24",
+      "style": 50,
+      "text": ""
+    },
+    {
+      "ref": "B25",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "C25",
+      "style": 2,
+      "text": ""
+    },
+    {
+      "ref": "D25",
+      "style": 7,
+      "text": ""
+    },
+    {
+      "ref": "E25",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F25",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "G25",
+      "style": 49,
+      "text": ""
+    },
+    {
+      "ref": "H25",
+      "style": 49,
+      "text": ""
+    },
+    {
+      "ref": "I25",
+      "style": 50,
+      "text": ""
+    },
+    {
+      "ref": "B26",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "C26",
+      "style": 2,
+      "text": ""
+    },
+    {
+      "ref": "D26",
+      "style": 7,
+      "text": ""
+    },
+    {
+      "ref": "E26",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F26",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "G26",
+      "style": 49,
+      "text": ""
+    },
+    {
+      "ref": "H26",
+      "style": 49,
+      "text": ""
+    },
+    {
+      "ref": "I26",
+      "style": 50,
+      "text": ""
+    },
+    {
+      "ref": "B27",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "C27",
+      "style": 2,
+      "text": ""
+    },
+    {
+      "ref": "D27",
+      "style": 7,
+      "text": ""
+    },
+    {
+      "ref": "E27",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F27",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "G27",
+      "style": 49,
+      "text": ""
+    },
+    {
+      "ref": "H27",
+      "style": 49,
+      "text": ""
+    },
+    {
+      "ref": "I27",
+      "style": 50,
+      "text": ""
+    },
+    {
+      "ref": "B28",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "C28",
+      "style": 2,
+      "text": ""
+    },
+    {
+      "ref": "D28",
+      "style": 7,
+      "text": ""
+    },
+    {
+      "ref": "E28",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F28",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "G28",
+      "style": 51,
+      "text": ""
+    },
+    {
+      "ref": "H28",
+      "style": 54,
+      "text": "          QR Platba"
+    },
+    {
+      "ref": "I28",
+      "style": 55,
+      "text": ""
+    },
+    {
+      "ref": "B29",
+      "style": 60,
+      "text": "Označení položky"
+    },
+    {
+      "ref": "C29",
+      "style": 61,
+      "text": ""
+    },
+    {
+      "ref": "D29",
+      "style": 25,
+      "text": "Cena"
+    },
+    {
+      "ref": "E29",
+      "style": 28,
+      "text": "Množství KS"
+    },
+    {
+      "ref": "F29",
+      "style": 29,
+      "text": "Základ DPH"
+    },
+    {
+      "ref": "G29",
+      "style": 45,
+      "text": "DPH %"
+    },
+    {
+      "ref": "H29",
+      "style": 46,
+      "text": "DPH Kč"
+    },
+    {
+      "ref": "I29",
+      "style": 46,
+      "text": "Celkem"
+    },
+    {
+      "ref": "B30",
+      "style": 43,
+      "text": ""
+    },
+    {
+      "ref": "C30",
+      "style": 40,
+      "text": ""
+    },
+    {
+      "ref": "D30",
+      "style": 36,
+      "text": ""
+    },
+    {
+      "ref": "E30",
+      "style": 42,
+      "text": ""
+    },
+    {
+      "ref": "F30",
+      "style": 36,
+      "text": ""
+    },
+    {
+      "ref": "G30",
+      "style": 36,
+      "text": ""
+    },
+    {
+      "ref": "H30",
+      "style": 36,
+      "text": ""
+    },
+    {
+      "ref": "I30",
+      "style": 44,
+      "text": ""
+    },
+    {
+      "ref": "B31",
+      "style": 90,
+      "text": ""
+    },
+    {
+      "ref": "C31",
+      "style": 91,
+      "text": ""
+    },
+    {
+      "ref": "D31",
+      "style": 36,
+      "text": ""
+    },
+    {
+      "ref": "E31",
+      "style": 42,
+      "text": ""
+    },
+    {
+      "ref": "F31",
+      "style": 36,
+      "text": ""
+    },
+    {
+      "ref": "G31",
+      "style": 36,
+      "text": ""
+    },
+    {
+      "ref": "H31",
+      "style": 36,
+      "text": ""
+    },
+    {
+      "ref": "I31",
+      "style": 44,
+      "text": ""
+    },
+    {
+      "ref": "B32",
+      "style": 90,
+      "text": ""
+    },
+    {
+      "ref": "C32",
+      "style": 91,
+      "text": ""
+    },
+    {
+      "ref": "D32",
+      "style": 38,
+      "text": ""
+    },
+    {
+      "ref": "E32",
+      "style": 39,
+      "text": ""
+    },
+    {
+      "ref": "F32",
+      "style": 38,
+      "text": ""
+    },
+    {
+      "ref": "G32",
+      "style": 36,
+      "text": ""
+    },
+    {
+      "ref": "H32",
+      "style": 36,
+      "text": ""
+    },
+    {
+      "ref": "I32",
+      "style": 41,
+      "text": ""
+    },
+    {
+      "ref": "B33",
+      "style": 76,
+      "text": ""
+    },
+    {
+      "ref": "C33",
+      "style": 69,
+      "text": ""
+    },
+    {
+      "ref": "D33",
+      "style": 27,
+      "text": ""
+    },
+    {
+      "ref": "E33",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F33",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "G33",
+      "style": 27,
+      "text": ""
+    },
+    {
+      "ref": "H33",
+      "style": 30,
+      "text": ""
+    },
+    {
+      "ref": "I33",
+      "style": 31,
+      "text": ""
+    },
+    {
+      "ref": "B34",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "C34",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "D34",
+      "style": 27,
+      "text": ""
+    },
+    {
+      "ref": "E34",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F34",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "G34",
+      "style": 27,
+      "text": ""
+    },
+    {
+      "ref": "H34",
+      "style": 27,
+      "text": ""
+    },
+    {
+      "ref": "I34",
+      "style": 31,
+      "text": ""
+    },
+    {
+      "ref": "B35",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "C35",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "D35",
+      "style": 27,
+      "text": ""
+    },
+    {
+      "ref": "E35",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F35",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "G35",
+      "style": 27,
+      "text": ""
+    },
+    {
+      "ref": "H35",
+      "style": 27,
+      "text": ""
+    },
+    {
+      "ref": "I35",
+      "style": 31,
+      "text": ""
+    },
+    {
+      "ref": "B36",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "C36",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "D36",
+      "style": 27,
+      "text": ""
+    },
+    {
+      "ref": "E36",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F36",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "G36",
+      "style": 27,
+      "text": ""
+    },
+    {
+      "ref": "H36",
+      "style": 27,
+      "text": ""
+    },
+    {
+      "ref": "I36",
+      "style": 31,
+      "text": ""
+    },
+    {
+      "ref": "B37",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "C37",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "D37",
+      "style": 27,
+      "text": ""
+    },
+    {
+      "ref": "E37",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F37",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "G37",
+      "style": 27,
+      "text": ""
+    },
+    {
+      "ref": "H37",
+      "style": 27,
+      "text": ""
+    },
+    {
+      "ref": "I37",
+      "style": 31,
+      "text": ""
+    },
+    {
+      "ref": "B38",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "C38",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "D38",
+      "style": 27,
+      "text": ""
+    },
+    {
+      "ref": "E38",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F38",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "G38",
+      "style": 27,
+      "text": ""
+    },
+    {
+      "ref": "H38",
+      "style": 27,
+      "text": ""
+    },
+    {
+      "ref": "I38",
+      "style": 31,
+      "text": ""
+    },
+    {
+      "ref": "B39",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "C39",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "D39",
+      "style": 27,
+      "text": ""
+    },
+    {
+      "ref": "E39",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F39",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "G39",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "H39",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "I39",
+      "style": 31,
+      "text": ""
+    },
+    {
+      "ref": "B40",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "C40",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "D40",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "E40",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F40",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "G40",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "H40",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "I40",
+      "style": 16,
+      "text": ""
+    },
+    {
+      "ref": "B41",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "C41",
+      "style": 8,
+      "text": ""
+    },
+    {
+      "ref": "D41",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "E41",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F41",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "G41",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "H41",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "I41",
+      "style": 16,
+      "text": ""
+    },
+    {
+      "ref": "B42",
+      "style": 15,
+      "text": ""
+    },
+    {
+      "ref": "C42",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "D42",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "E42",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F42",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "G42",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "H42",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "I42",
+      "style": 16,
+      "text": ""
+    },
+    {
+      "ref": "B43",
+      "style": 17,
+      "text": ""
+    },
+    {
+      "ref": "C43",
+      "style": 18,
+      "text": ""
+    },
+    {
+      "ref": "D43",
+      "style": 18,
+      "text": ""
+    },
+    {
+      "ref": "E43",
+      "style": 18,
+      "text": ""
+    },
+    {
+      "ref": "F43",
+      "style": 18,
+      "text": ""
+    },
+    {
+      "ref": "G43",
+      "style": 18,
+      "text": ""
+    },
+    {
+      "ref": "H43",
+      "style": 18,
+      "text": ""
+    },
+    {
+      "ref": "I43",
+      "style": 19,
+      "text": ""
+    },
+    {
+      "ref": "B44",
+      "style": 87,
+      "text": ""
+    },
+    {
+      "ref": "C44",
+      "style": 88,
+      "text": ""
+    },
+    {
+      "ref": "D44",
+      "style": 12,
+      "text": ""
+    },
+    {
+      "ref": "E44",
+      "style": 12,
+      "text": ""
+    },
+    {
+      "ref": "F44",
+      "style": 33,
+      "text": "Základ DPH"
+    },
+    {
+      "ref": "G44",
+      "style": 34,
+      "text": "Sazba DPH"
+    },
+    {
+      "ref": "H44",
+      "style": 34,
+      "text": "DPH"
+    },
+    {
+      "ref": "I44",
+      "style": 35,
+      "text": "Celkem s DPH"
+    },
+    {
+      "ref": "B45",
+      "style": 72,
+      "text": ""
+    },
+    {
+      "ref": "C45",
+      "style": 73,
+      "text": ""
+    },
+    {
+      "ref": "D45",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "E45",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F45",
+      "style": 36,
+      "text": ""
+    },
+    {
+      "ref": "G45",
+      "style": 37,
+      "text": ""
+    },
+    {
+      "ref": "H45",
+      "style": 36,
+      "text": ""
+    },
+    {
+      "ref": "I45",
+      "style": 31,
+      "text": ""
+    },
+    {
+      "ref": "B46",
+      "style": 76,
+      "text": ""
+    },
+    {
+      "ref": "C46",
+      "style": 77,
+      "text": ""
+    },
+    {
+      "ref": "D46",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "E46",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F46",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "G46",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "H46",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "I46",
+      "style": 16,
+      "text": ""
+    },
+    {
+      "ref": "B47",
+      "style": 76,
+      "text": ""
+    },
+    {
+      "ref": "C47",
+      "style": 77,
+      "text": ""
+    },
+    {
+      "ref": "D47",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "E47",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "F47",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "G47",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "H47",
+      "style": 1,
+      "text": ""
+    },
+    {
+      "ref": "I47",
+      "style": 16,
+      "text": ""
+    },
+    {
+      "ref": "B48",
+      "style": 76,
+      "text": ""
+    },
+    {
+      "ref": "C48",
+      "style": 77,
+      "text": ""
+    },
+    {
+      "ref": "D48",
+      "style": 78,
+      "text": "Celkem k úhradě :"
+    },
+    {
+      "ref": "E48",
+      "style": 79,
+      "text": ""
+    },
+    {
+      "ref": "F48",
+      "style": 80,
+      "text": ""
+    },
+    {
+      "ref": "G48",
+      "style": 83,
+      "text": ""
+    },
+    {
+      "ref": "H48",
+      "style": 84,
+      "text": ""
+    },
+    {
+      "ref": "I48",
+      "style": 70,
+      "text": "Kč"
+    },
+    {
+      "ref": "B49",
+      "style": 74,
+      "text": ""
+    },
+    {
+      "ref": "C49",
+      "style": 75,
+      "text": ""
+    },
+    {
+      "ref": "D49",
+      "style": 81,
+      "text": ""
+    },
+    {
+      "ref": "E49",
+      "style": 81,
+      "text": ""
+    },
+    {
+      "ref": "F49",
+      "style": 82,
+      "text": ""
+    },
+    {
+      "ref": "G49",
+      "style": 85,
+      "text": ""
+    },
+    {
+      "ref": "H49",
+      "style": 86,
+      "text": ""
+    },
+    {
+      "ref": "I49",
+      "style": 71,
+      "text": ""
+    }
+  ],
+  "merges": [
+    "B44:C44",
+    "G18:H18",
+    "G19:H19",
+    "B32:C32",
+    "B33:C33",
+    "B31:C31",
+    "I48:I49",
+    "B45:C45",
+    "B49:C49",
+    "B48:C48",
+    "B47:C47",
+    "B46:C46",
+    "D48:F49",
+    "G48:H49",
+    "H28:I28",
+    "H3:I3",
+    "B3:C3",
+    "B29:C29",
+    "C7:D7",
+    "C8:D8",
+    "C9:D9",
+    "C12:D12",
+    "B15:D15",
+    "B14:E14",
+    "G13:H13",
+    "G14:H14"
+  ],
+  "first_row": 3,
+  "last_row": 49
+}

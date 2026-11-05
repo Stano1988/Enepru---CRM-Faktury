@@ -1,0 +1,1 @@
+<nav class="tabs" aria-label="Složky pošty"><a {% if folder == 'received' %}aria-current="page"{% endif %} href="{% url 'inbox' %}">Přijatá</a><a {% if folder == 'draft' %}aria-current="page"{% endif %} href="{% url 'outbox' %}?folder=draft">Rozepsaná</a><a {% if folder == 'sent' %}aria-current="page"{% endif %} href="{% url 'outbox' %}?folder=sent">Odeslaná</a></nav>

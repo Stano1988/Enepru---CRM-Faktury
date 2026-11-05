@@ -8,7 +8,6 @@ import zipfile
 from datetime import timedelta
 from decimal import Decimal
 from pathlib import Path
-from xml.sax.saxutils import escape
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -31,7 +30,6 @@ from .models import (
     Message,
     Offer,
     Payment,
-    Requirement,
     Task,
 )
 
@@ -85,8 +83,6 @@ def ensure_folders(job):
 @transaction.atomic
 def initialize_job(job):
     ensure_folders(job)
-    for title in ["Dokumentace stavby", "Fotografie stavby"]:
-        Requirement.objects.get_or_create(job=job, title=title)
     services = ["penb", "passport"] if job.service == "both" else [job.service]
     for service in services:
         Task.objects.get_or_create(
@@ -145,6 +141,9 @@ def accept_offer(offer, data):
         "due_date": offer.due_date.isoformat(),
     }
     offer.save(update_fields=["accepted_at", "acceptance"])
+    Message.objects.filter(offer=offer, state__in=["draft", "failed"]).update(
+        state="cancelled"
+    )
     inquiry.status = "accepted"
     inquiry.save(update_fields=["status"])
     event(None, "Klient potvrdil nabídku", offer=offer.pk, inquiry=inquiry.pk)
@@ -200,7 +199,7 @@ def convert_inquiry(inquiry, user):
             "email": inquiry.email,
         },
         assigned_to=user,
-        next_step="Zkontrolovat podklady a domluvit zaměření",
+        next_step="Domluvit zaměření",
     )
     initialize_job(job)
     for attachment in inquiry.attachments.all():
@@ -262,116 +261,9 @@ def qr_png(invoice):
 
 
 def invoice_pdf(invoice):
-    from reportlab.lib import colors
-    from reportlab.lib.styles import getSampleStyleSheet
-    from reportlab.lib.units import mm
-    from reportlab.platypus import (
-        Image,
-        Paragraph,
-        SimpleDocTemplate,
-        Spacer,
-        Table,
-        TableStyle,
-    )
+    from .invoice_layout import render
 
-    from .pdf_fonts import register
-
-    font_name = register()
-    styles = getSampleStyleSheet()
-    for style in styles.byName.values():
-        style.fontName = font_name
-    normal = styles["Normal"]
-    normal.leading = 15
-
-    def para(text):
-        return Paragraph(escape(str(text)).replace("\n", "<br/>"), normal)
-
-    out = io.BytesIO()
-    doc = SimpleDocTemplate(
-        out,
-        pagesize=(210 * mm, 297 * mm),
-        leftMargin=18 * mm,
-        rightMargin=18 * mm,
-        topMargin=18 * mm,
-        bottomMargin=18 * mm,
-    )
-    title = "Zálohová výzva" if invoice.kind == "advance" else "Faktura"
-    story = [
-        Paragraph(f"{title} {escape(invoice.number)}", styles["Title"]),
-        Spacer(1, 10 * mm),
-    ]
-    supplier = invoice.supplier
-    recipient = invoice.recipient
-    supplier_text = f"Dodavatel:\n{supplier['name']}\n{supplier['address']}\nIČO: {supplier['company_id']}\nDodavatel není plátce DPH."
-    recipient_text = f"Odběratel:\n{recipient['name']}\n{recipient['address']}\nIČO: {recipient.get('company_id', '')}\nDIČ: {recipient.get('tax_id', '')}"
-    parties = Table(
-        [[para(supplier_text), para(recipient_text)]],
-        colWidths=[87 * mm, 87 * mm],
-        splitInRow=1,
-    )
-    parties.setStyle(
-        TableStyle(
-            [
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 15),
-            ]
-        )
-    )
-    story.append(parties)
-    story.extend(
-        [
-            para(
-                f"Datum vystavení: {invoice.issue_date:%d.%m.%Y}    Splatnost: {invoice.due_date:%d.%m.%Y}"
-            ),
-            para(f"Účet: {supplier['bank_account']} — {supplier['bank_name']}"),
-            para(f"Variabilní symbol: {invoice.variable_symbol}"),
-        ]
-    )
-    if invoice.job_id:
-        story.append(para(f"Zakázka: {invoice.job.number} — {invoice.job.address}"))
-    story.append(Spacer(1, 8 * mm))
-    rows = [[para("Fakturujeme vám za"), para("Cena celkem Kč")]]
-    for line in invoice.lines.all():
-        description = (
-            line.description
-            if line.quantity == 1
-            else f"{line.description} ({line.quantity}×)"
-        )
-        rows.append([para(description), para(f"{line.total:.2f}")])
-    table = Table(
-        rows, colWidths=[139 * mm, 35 * mm], repeatRows=1, hAlign="LEFT", splitInRow=1
-    )
-    table.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#eaf3f0")),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("LINEBELOW", (0, 0), (-1, -1), 0.4, colors.HexColor("#dde5e5")),
-                ("TOPPADDING", (0, 0), (-1, -1), 9),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 9),
-            ]
-        )
-    )
-    story.extend([table, Spacer(1, 8 * mm)])
-    if invoice.advance_id:
-        story.append(
-            para(
-                f"Odečet uhrazené zálohy {invoice.advance.number}: −{invoice.advance_amount:.2f} Kč"
-            )
-        )
-    story.append(
-        Paragraph(f"Celkem k úhradě: {invoice.total:.2f} Kč", styles["Heading2"])
-    )
-    if invoice.total > 0:
-        story.extend(
-            [
-                Spacer(1, 5 * mm),
-                Image(io.BytesIO(qr_png(invoice)), 42 * mm, 42 * mm, hAlign="RIGHT"),
-                para("QR Platba · Úhrada převodem"),
-            ]
-        )
-    doc.build(story)
-    return out.getvalue()
+    return render(invoice)
 
 
 @transaction.atomic
@@ -573,12 +465,17 @@ def send_message(message, user=None):
             )
         message.state = "sending"
         message.save(update_fields=["state", "body", "message_id"])
+    headers = {"Message-ID": message.message_id}
+    if message.in_reply_to and re.fullmatch(r"<[^<>\s]{1,995}>", message.in_reply_to):
+        headers.update(
+            {"In-Reply-To": message.in_reply_to, "References": message.in_reply_to}
+        )
     mail = EmailMessage(
         message.subject,
         message.body,
         settings.DEFAULT_FROM_EMAIL,
         [message.to],
-        headers={"Message-ID": message.message_id},
+        headers=headers,
     )
     if message.invoice:
         mail.attach(

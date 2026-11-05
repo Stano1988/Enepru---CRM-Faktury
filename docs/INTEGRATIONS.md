@@ -74,7 +74,7 @@ Napojení musí být v backendu skutečného webového formuláře; po selhání
 
 ## Připojení skutečného webu Enepru
 
-**Windows bez veřejného CRM:** nasaďte změněný `app.py` i nový `crm_bridge.py` z enepru-web. Web dál odešle zprávu přes již nastavené SMTP. Přidává strojově čitelnou přílohu `enepru-poptavka.json`; nahrané podklady zůstávají běžnými přílohami. V CRM připojte schránku a vyberte složku pro poptávky. Pro automatické vytváření je nutné zapnout převod této složky. Bez automatického režimu zůstává tlačítko Vytvořit poptávku.
+**Windows bez veřejného CRM:** nasaďte změněný `app.py` i nový `crm_bridge.py` z enepru-web. Web dál odešle zprávu přes již nastavené SMTP. Přidává strojově čitelnou přílohu `enepru-poptavka.json`; nahrané podklady zůstávají běžnými přílohami. V CRM připojte schránku a vyberte složku pro poptávky. Rozpoznané formuláře webu se nově automaticky převedou na poptávky (CRM_IMAP_AUTO_WEB=1, výchozí). Běžná osobní zpráva zůstane v Poště s tlačítkem Vytvořit poptávku, pokud výslovně nezapnete převod celé složky.
 
 Pro ověření původu vytvořte náhodný sdílený klíč (nejméně 32 znaků) v bezpečném nastavení hostingu jako `CRM_SHARED_SECRET`; na PC spusťte **Pripojit-web.bat**, ponechte `CRM_WEBHOOK_SECRET` a tentýž klíč vložte do skrytého vstupu. Uloží se do Správce pověření Windows. `.web-settings.json` obsahuje jen identifikátor, ne klíč. Restartujte CRM. Bez klíče lze strukturovaný e-mail importovat, ale jeho původ bude výslovně neověřený. Nesprávný podpis se odmítne. Starší dopisy webu bez metadat umíme rozpoznat podle shodného Reply-To a pole E-mail; také nejsou kryptograficky ověřené.
 
@@ -83,3 +83,7 @@ Pro ověření původu vytvořte náhodný sdílený klíč (nejméně 32 znaků
 Další web dostane vlastní WebsiteSource, `CRM_SOURCE_SLUG` a vlastní klíč. Přímé API nevyžaduje SMTP, ale odpovědi a faktury z CRM ano. Windows lokální CRM nemusí mít otevřený port do internetu.
 
 Podepsaná e-mailová metadata obsahují také seznam jmen příloh a jejich SHA-256. Změněný nebo chybějící soubor se odmítne před vytvořením poptávky.
+
+## Přijatá i odeslaná složka a odpovědi
+
+Nový průvodce Pripojit-postu.bat umí načítat i odeslané ze Seznamu (výchozí složka Sent). Stará nastavení je potřeba doplnit průvodcem nebo bezpečnými proměnnými CRM_IMAP_SYNC_SENT=1 a CRM_IMAP_SENT_FOLDER. Obě složky se čtou readonly a mají samostatné kurzory. Odeslané se nikdy automaticky nemění v nové poptávky. Native CRM zpráva a kopie stejného Message-ID v Sent jsou v seznamu jednou. Odpovědi z CRM používají In-Reply-To/References, e-maily lze ručně přiřadit a komunikace je přístupná i od zakázky/faktury. Podrobný rozsah a hranice synchronizace: [INTUITIVE-UPDATE.md](INTUITIVE-UPDATE.md). Skutečná schránka nebyla ověřena.

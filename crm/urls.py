@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import accounts, document_tools, office, refinements, views
+from . import accounts, document_tools, easy, office, refinements, views
 
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
@@ -206,3 +206,17 @@ urlpatterns += [
     ),
     path("documents/bundle/", document_tools.bundle, name="document_bundle"),
 ]
+
+urlpatterns += [
+    path("inquiries/<int:pk>/reply/", easy.reply, name="inquiry_reply"),
+    path("invoices/<int:pk>/paid/", easy.paid, name="invoice_paid"),
+]
+
+urlpatterns += [path("offers/<int:pk>/confirm/", easy.confirm, name="offer_confirm")]
+
+urlpatterns += [
+    path("inbox/<int:pk>/link/", easy.mail_link, name="mail_link"),
+    path("inbox/<int:pk>/reply/", easy.mail_reply, name="mail_reply"),
+]
+
+urlpatterns += [path("jobs/<int:pk>/upload/", easy.job_upload, name="job_upload")]

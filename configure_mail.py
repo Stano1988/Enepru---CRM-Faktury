@@ -17,14 +17,11 @@ def main():
     username = (
         input("E-mail [penb.lahodny@seznam.cz]: ").strip() or "penb.lahodny@seznam.cz"
     )
-    folder = (
-        input(
-            "Složka pro příjem [INBOX] (doporučeno založit složku Poptavky): "
-        ).strip()
-        or "INBOX"
-    )
+    folder = input("Složka pro příjem pošty [INBOX]: ").strip() or "INBOX"
     auto = (
-        input("Vytvářet ze všech nových zpráv této složky rovnou poptávky? [a/N]: ")
+        input(
+            "Vytvářet poptávky také ze všech běžných e-mailů? Webové formuláře se převádějí automaticky. [a/N]: "
+        )
         .strip()
         .lower()
         == "a"
@@ -39,10 +36,27 @@ def main():
             != "a"
         ):
             auto = False
+    sync_sent = (
+        input("Načítat i zprávy odeslané přímo ze Seznamu? [A/n]: ").strip().lower()
+        != "n"
+    )
+    sent_folder = (
+        (input("Název odeslané složky [Sent]: ").strip() or "Sent")
+        if sync_sent
+        else "Sent"
+    )
     password = getpass.getpass("Heslo aplikace pro poštu: ")
     if password != getpass.getpass("Zopakujte heslo: "):
         raise ValueError("Hesla se neshodují.")
-    save_profile(Path(__file__).resolve().parent, username, password, folder, auto)
+    save_profile(
+        Path(__file__).resolve().parent,
+        username,
+        password,
+        folder,
+        auto,
+        sync_sent,
+        sent_folder,
+    )
     print("Nastavení uloženo; heslo je pouze ve Správci pověření Windows.")
     print(
         "Připojení nebylo tímto ověřeno. Restartujte CRM a použijte Přijatá pošta → Načíst poštu."

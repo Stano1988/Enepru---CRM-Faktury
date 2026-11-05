@@ -6,6 +6,14 @@ Webové CRM v češtině pro Windows a mobilní prohlížeč. Data se ukládají
 
 [Stáhnout CRM jako ZIP](https://github.com/Stano1988/Enepru---CRM-Faktury/archive/refs/heads/main.zip) · [Co je v této verzi a jak aktualizovat](docs/RELEASE-2026-11-05.md)
 
+## Nové jednodušší ovládání
+
+Pošta → Klienti → Poptávky a nabídky → Zakázky a archiv → Faktury. Dokumenty, kalendář a reporty jsou níže; nastavení a technické agendy jsou schované. Barvy odpovídají webu Enepru.
+
+Cena z kalkulačky předvyplní nabídku. **Odpovědět** otevře hotový e-mail k úpravě a odeslání. Po potvrzení se údaje přenesou do zakázky a faktury; úhradu označíš tlačítkem **Označit jako zaplacenou**. Bankovní napojení není nutné. Podklady otevřeš kliknutím, případně rovnou stáhneš.
+
+Faktura používá rozměry buněk, rámečky a styly z původní excelové předlohy majitele. [Ukázka PDF](docs/screenshots/faktura-podle-sablony.png) · [Předvyplněná odpověď](docs/screenshots/odpoved-na-poptavku.png) · [Jak to funguje a co nastavit](docs/INTUITIVE-UPDATE.md).
+
 ## Úpravy podle připomínek z 5. listopadu
 
 - **Faktura bez tabulky položek:** volný text „Fakturujeme vám za…“ a jedna celková cena. Z nabídky se cena přenese do zakázky a z ní do faktury. Text a cenu lze upravit i samostatně.

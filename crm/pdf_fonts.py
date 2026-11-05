@@ -19,4 +19,7 @@ def register():
                 / "DejaVuSans.ttf"
             )
             pdfmetrics.registerFont(TTFont("CRMUnicode", str(font)))
+            pdfmetrics.registerFont(
+                TTFont("CRMUnicodeBold", str(font.with_name("DejaVuSans-Bold.ttf")))
+            )
     return "CRMUnicode"

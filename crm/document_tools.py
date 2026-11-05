@@ -30,8 +30,11 @@ def preview(request, pk):
         ".jpeg": "image/jpeg",
     }
     if suffix not in types:
-        return HttpResponseBadRequest(
-            "Tento typ nemá bezpečný náhled. Použijte stažení."
+        return FileResponse(
+            doc.file.open("rb"),
+            as_attachment=True,
+            filename=Path(doc.name).name,
+            content_type="application/octet-stream",
         )
     response = FileResponse(
         doc.file.open("rb"),

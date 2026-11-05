@@ -36,3 +36,35 @@ if (clientSelect) {
     } catch (_) { /* Keep manual entry available if the connection is interrupted. */ }
   });
 }
+
+const reply = document.querySelector('[data-offer-reply]');
+if (reply) {
+  const price = reply.querySelector('#id_price');
+  const due = reply.querySelector('#id_due_date');
+  const body = reply.querySelector('#id_body');
+  const update = () => {
+    const amount = Number(price.value.replace(',', '.'));
+    if (price.value && Number.isFinite(amount)) body.value = body.value.replace(/Cena celkem je [^\n]+ Kč\./, `Cena celkem je ${amount.toFixed(2).replace('.', ',')} Kč.`);
+    if (due.value) {
+      const [y,m,d] = due.value.split('-');
+      body.value = body.value.replace(/Předpokládaný termín vyhotovení je [^\n]+ po dodání/, `Předpokládaný termín vyhotovení je ${d}.${m}.${y} po dodání`);
+    }
+  };
+  price.addEventListener('input',update);due.addEventListener('change',update);
+}
+
+// Highlight the current section and reveal its parent, without changing the menu order.
+const menu = document.querySelector('#main-menu');
+if (menu) {
+  const current = location.pathname;
+  const candidates = [...menu.querySelectorAll('a')].filter(a => {
+    const url = new URL(a.href);
+    if (url.pathname === '/') return current === '/' || current.startsWith('/jobs/');
+    return current.startsWith(url.pathname) && (!url.search || url.search === location.search);
+  }).sort((a,b) => b.getAttribute('href').length-a.getAttribute('href').length);
+  if (candidates[0]) { candidates[0].setAttribute('aria-current','page'); const group=candidates[0].closest('details'); if(group) group.open=true; }
+}
+// Anchors into optional sections open them before scrolling.
+document.querySelectorAll('.tabs a[href^="#"]').forEach(link => link.addEventListener('click',()=>{
+  const section=document.getElementById(link.hash.slice(1));if(section?.tagName==='DETAILS') section.open=true;
+}));

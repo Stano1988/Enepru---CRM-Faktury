@@ -78,7 +78,10 @@ def ensure_mutable(job):
 
 
 def form_page(request, form, title, **context):
-    return render(request, "crm/form.html", {"form": form, "title": title, **context})
+    template = (
+        "crm/client_form.html" if isinstance(form, f.ClientForm) else "crm/form.html"
+    )
+    return render(request, template, {"form": form, "title": title, **context})
 
 
 def detail_form(request, form, title, on_valid):
@@ -208,6 +211,14 @@ def inquiries(request):
         qs = qs.filter(
             Q(name__icontains=q) | Q(email__icontains=q) | Q(address__icontains=q)
         )
+    from .sorting import ordered
+
+    qs = ordered(
+        qs,
+        request,
+        {"pk", "name", "address", "service", "source", "status", "created_at"},
+        "-created_at",
+    )
     return render(
         request,
         "crm/inquiries.html",
@@ -628,7 +639,33 @@ def invoices(request):
         "lines", "payments"
     )
     if not request.user.is_superuser:
-        qs = qs.filter(job__in=jobs_for(request.user))
+        qs = qs.filter(
+            Q(job__in=jobs_for(request.user))
+            | Q(job__isnull=True, created_by=request.user)
+        )
+    from .sorting import ordered
+
+    key = request.GET.get("sort", "-issue_date")
+    if key.lstrip("-") in {"total", "balance", "state"}:
+        qs = sorted(
+            qs,
+            key=lambda item: (getattr(item, key.lstrip("-")), item.pk),
+            reverse=key.startswith("-"),
+        )
+    else:
+        qs = ordered(
+            qs,
+            request,
+            {
+                "number",
+                "client__name",
+                "job__number",
+                "variable_symbol",
+                "issue_date",
+                "due_date",
+            },
+            "-issue_date",
+        )
     return render(request, "crm/invoices.html", {"invoices": qs})
 
 
@@ -874,11 +911,92 @@ def payment_new(request, pk):
 @permission_required("crm.view_message", raise_exception=True)
 def outbox(request):
     manager(request.user)
+    from .sorting import ordered
+
+    qs = (
+        Message.objects.filter(state="sent")
+        if request.GET.get("folder") == "sent"
+        else Message.objects.exclude(state__in=["sent", "cancelled"])
+    )
+    qs = ordered(
+        qs, request, {"to", "subject", "state", "sent_at", "created_at"}, "-created_at"
+    )
+    from .models import ReceivedMail
+
+    imported = (
+        ReceivedMail.objects.filter(is_sent=True).select_related("inquiry", "job")
+        if request.GET.get("folder") == "sent"
+        else ReceivedMail.objects.none()
+    )
+    # Same Message-ID in Sent and in CRM is one visible outgoing message.
+    ids = imported.exclude(message_id="").values("message_id")
+    imported = imported.exclude(
+        message_id__in=Message.objects.filter(state="sent", message_id__in=ids).values(
+            "message_id"
+        )
+    )
+    imported = ordered(
+        imported, request, {"subject", "sent_at", "received_at"}, "-sent_at"
+    )
+    rows = []
+    for message in qs:
+        rows.append(
+            {
+                "id": message.pk,
+                "external": False,
+                "to": message.to,
+                "subject": message.subject,
+                "state": message.state,
+                "state_label": message.get_state_display(),
+                "date": message.sent_at or message.created_at,
+                "body": message.body,
+                "error": message.error,
+                "job": message.job,
+                "inquiry": message.inquiry,
+                "invoice": message.invoice,
+            }
+        )
+    for mail in imported:
+        rows.append(
+            {
+                "id": mail.pk,
+                "external": True,
+                "to": ", ".join(mail.recipients),
+                "subject": mail.subject,
+                "state": "sent",
+                "state_label": "Odesláno ze schránky",
+                "date": mail.sent_at or mail.received_at,
+                "body": mail.body,
+                "job": mail.job,
+                "inquiry": mail.inquiry,
+            }
+        )
+    sort = request.GET.get("sort", "-created_at")
+    field = sort.lstrip("-")
+    key = {
+        "to": "to",
+        "subject": "subject",
+        "state": "state_label",
+        "created_at": "date",
+        "sent_at": "date",
+    }.get(field, "date")
+    rows.sort(
+        key=lambda row: (
+            row[key].casefold() if isinstance(row[key], str) else row[key],
+            row["id"],
+        ),
+        reverse=sort.startswith("-")
+        if field in {"to", "subject", "state", "created_at", "sent_at"}
+        else True,
+    )
     return render(
         request,
         "crm/outbox.html",
         {
-            "messages_list": Message.objects.all(),
+            "messages_list": qs,
+            "mail_rows": rows,
+            "sent_imported": imported,
+            "folder": request.GET.get("folder", "draft"),
             "email_enabled": __import__(
                 "django.conf", fromlist=["settings"]
             ).settings.CRM_EMAIL_ENABLED,
@@ -892,12 +1010,26 @@ def message_edit(request, pk):
     manager(request.user)
     obj = get_object_or_404(Message, pk=pk)
     if obj.state not in ["draft", "failed"]:
-        return redirect("outbox")
+        return render(request, "crm/message_detail.html", {"msg": obj})
     form = f.MessageForm(request.POST or None, instance=obj)
     if request.method == "POST" and form.is_valid():
         form.save()
-        return redirect("outbox")
-    return form_page(request, form, "Zkontrolovat e-mail před odesláním")
+        if request.POST.get("intent") == "send":
+            try:
+                result = send_message(obj, request.user)
+                if result.state == "sent":
+                    messages.success(request, "Zpráva odeslána.")
+                    if obj.invoice_id:
+                        return redirect("invoice_detail", pk=obj.invoice_id)
+                    if obj.inquiry_id:
+                        return redirect("inquiry_detail", pk=obj.inquiry_id)
+                    return redirect("outbox")
+                messages.error(request, result.error or "Zpráva se neodeslala.")
+            except ValidationError as error:
+                messages.error(request, " ".join(error.messages) + " Návrh je uložený.")
+        else:
+            return redirect("outbox")
+    return render(request, "crm/message_editor.html", {"form": form, "msg": obj})
 
 
 @login_required
@@ -1356,7 +1488,10 @@ def settings_view(request):
         messages.success(request, "Nastavení uloženo. Vystavené doklady se nemění.")
         return redirect("settings")
     return form_page(
-        request, form, "Dodavatel, číslování a splatnost", backup_available=True
+        request,
+        form,
+        "Moje údaje, číslování a výchozí splatnost",
+        backup_available=True,
     )
 
 
@@ -1690,6 +1825,14 @@ def archives(request):
     qs = jobs_for(request.user).filter(archived_at__isnull=False)
     if request.GET.get("expiring"):
         qs = qs.filter(retain_until__lte=timezone.localdate() + timedelta(days=90))
+    from .sorting import ordered
+
+    qs = ordered(
+        qs,
+        request,
+        {"number", "title", "archived_at", "retain_until", "hold"},
+        "-archived_at",
+    )
     return render(request, "crm/archives.html", {"jobs": qs})
 
 

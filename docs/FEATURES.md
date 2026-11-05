@@ -1,6 +1,8 @@
 # Stav požadavků
 
-**Aktualizace 5. 11. 2026:** jednotlivé agendy mají fungovat samostatně; vazby jsou pomoc, nikoliv povinné pořadí. Cenová nabídka není podmínkou zakázky a zakázka není podmínkou faktury.
+**Aktualizace 5. 11. 2026:** nové jednoduché menu, paleta Enepru, cena z kalkulačky → předvyplněný e-mail, ruční zaplacení, česká oprávnění a šipky v seznamech; podrobně [INTUITIVE-UPDATE.md](INTUITIVE-UPDATE.md).
+
+ jednotlivé agendy mají fungovat samostatně; vazby jsou pomoc, nikoliv povinné pořadí. Cenová nabídka není podmínkou zakázky a zakázka není podmínkou faktury.
 
 Tento soupis rozlišuje implementovanou funkci, provedenou kontrolu a nepřipojenou externí službu. Úplnou produkční připravenost netvrdíme.
 
@@ -8,9 +10,9 @@ Tento soupis rozlišuje implementovanou funkci, provedenou kontrolu a nepřipoje
 |---|---|---|
 | Klienti a kontakty | Karta klienta, poznámky a požadavky, individuální splatnost, editace s historií, opakované použití, kontrola duplicit, kontaktní role a adresy | Řízené slučování duplicit, více firem u jednoho kontaktu |
 | ARES | Načítací formulář, předvyplnění; test s mockovaným API | Skutečný přístup na ares.gov.cz je třeba ověřit v cílovém prostředí |
-| Nemovitosti | Samostatná evidence, parcely, technické poznámky, vazba na zakázku | Podrobné strukturované odborné údaje a napojení na katastr |
+| Nemovitosti | Podle nového zadání stačí adresa přímo u zakázky. Karta se nezakládá, odkaz i pole jsou skryté; původní záznamy zachované | Pokročilá evidence není požadavkem běžného postupu |
 | Webové poptávky | Formulář, přílohy, deduplikace, podepsané API pro více webů s vlastními klíči a zdroji | Změny skutečného enepru-web připravené a společně testované, zbývá nasadit na hosting; antispam pro větší provoz |
-| Příjem e-mailu | EML, vytvoření poptávky tlačítkem, readonly IMAP, automatický převod vybrané složky, párování odpovědí a příloh | Ověření skutečné schránky Seznam; nastavení přes Windows průvodce nebo bezpečné proměnné |
+| Příjem e-mailu | EML, readonly IMAP přijaté i odeslané složky, odpověď z CRM, přiřazení k zakázce/poptávce/faktuře, deduplikace Sent podle Message-ID, automatický převod přijaté složky | Ověření skutečné schránky Seznam; nastavení přes Windows průvodce nebo bezpečné proměnné |
 | Nabídky | Verze, uložené PDF, cena, rozsah, podmínky, platnost, e-mailový návrh, potvrzení/odmítnutí klientem, připomínka | Živé doručování a konečná úprava vzhledu s majitelem; automatické odesílání nabídky se nezapíná bez kontroly |
 | Zakázky | Převod i samostatné založení s novým klientem na místě, třídění a filtry, číslo, nemovitost, termíny, popis, historie a stav | Dílčí stavové workflow PENB/pasportu je nyní zastoupeno úkoly, nikoliv samostatnými stavovými kartami |
 | Dokumenty | Samostatná knihovna i dokumenty u zakázek, pozdější přiřazení, složky, nahrávání, verze, metadata, koš a oprávnění | Přetažení, hromadné změny a antivirový skener; náhled PDF/obrázků a výběrový ZIP jsou implementované |
@@ -18,7 +20,7 @@ Tento soupis rozlišuje implementovanou funkci, provedenou kontrolu a nepřipoje
 | Termíny a práce | Vlastní soukromé zápisy bez zakázky, živé termíny dokončení, úkoly, zaměření, měsíční kalendář, hodiny a upozornění | Konflikty v kalendáři, automatické plánování kapacity, externí synchronizace |
 | Vícepráce | Návrh, potvrzení odkazem, změna ceny a termínu, idempotence | Zamítnutí/revokace a přesné rozdělení do fakturačních položek |
 | Faktury | Volný text a jedna cena bez povinných položek/katalogu, přenos ceny, individuální splatnost, automatické uložení nového klienta, PDF/QR, vystavení a příprava e-mailu | Opravné doklady, externě vystavené faktury a jejich import, více záloh na jedno vyúčtování, další měny a DPH |
-| Excelová předloha | Hlavní prvky, údaje dodavatele, české popisky a QR | Přesné grafické doladění proti původnímu souboru s majitelem |
+| Excelová předloha | Převzaté buňky, rozměry, styly, slučování a rámečky z XLSM, dynamické údaje a QR; Arial na Windows, přibalená metrická náhrada jinde | Potvrzení výtisku na skutečném Windows/Excelu majitele; ukázka v dokumentaci |
 | Platby | Ruční, částečné, přeplatky, refundace, zrušení chybného přiřazení | Rozdělení jedné bankovní transakce mezi několik faktur |
 | Banka | Normalizovaný CSV import, deduplikace, jednoznačné párování, ruční přiřazení | Konkrétní formát výpisu MONETA a přímé bankovní API |
 | Upomínky | Tři stupně, nastavení, ruční/automatické SMTP, zastavení úhradou, pozastavení | Splátkové kalendáře, potvrzené doručení od poskytovatele |
@@ -40,7 +42,7 @@ Tento soupis rozlišuje implementovanou funkci, provedenou kontrolu a nepřipoje
 
 ## Provedená kontrola
 
-- 82 automatických Django testů: workflow, platby, zálohy, bankovní duplicity, oprávnění, interní sdílení, MFA, archiv, formuláře, bezpečnostní hlavičky.
+- 96 automatických Django testů: workflow, platby, zálohy, bankovní duplicity, oprávnění, interní sdílení, MFA, archiv, formuláře, bezpečnostní hlavičky.
 - Skutečné Chromium: přihlášení, hlavní obrazovky, mobilní velikost, PDF a absence horizontálního přetékání hlavní stránky.
 - Skutečný Chromium průchod: založení zakázky → uložení předvyplněné faktury bez úprav → vystavení → přijetí platby → zelený stav Uhrazeno.
 - Obsah PDF: česká diakritika, číslo, VS, účet a částka.
@@ -53,3 +55,5 @@ Tento soupis rozlišuje implementovanou funkci, provedenou kontrolu a nepřipoje
 - 17 automatických testů skutečného webu, 6 společných testů web → CRM (včetně API/e-mail deduplikace, 10 příloh a odmítnutí nesprávného podpisu), Chromium všech tří formulářů se simulovaným SMTP. Žádná skutečná pošta nebyla odeslána.
 
 - Nové browser ověření nabídka → uložené PDF → odmítnutí klientem, výběrový ZIP, report; obsah českého PDF nabídky i faktury ověřen pypdf. Přibalené DejaVu Sans s licencí pokrývá česká písmena včetně ě/ř/ů. Původní uložené PDF se nepřepisují. Denní záloha vytvořena reálným příkazem a všechny součty ZIP ověřeny.
+
+- Nejnovější Chromium: webová cena → upravený e-mail → potvrzení → zakázka → více souborů → faktura dle XLSM (jedna A4) → ruční doplacení → zelený stav. Také česká oprávnění, seznamy se šipkami a mobilní menu. Kontrola požadovaných podkladů se podle přání majitele už nevytváří a není v rozhraní.

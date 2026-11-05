@@ -9,7 +9,15 @@ SERVICE = "LahodnyCRM.Mail"
 FILENAME = ".mail-settings.json"
 
 
-def save_profile(base_dir, username, password, folder="INBOX", auto_create=False):
+def save_profile(
+    base_dir,
+    username,
+    password,
+    folder="INBOX",
+    auto_create=False,
+    sync_sent=False,
+    sent_folder="Sent",
+):
     import keyring
 
     if (
@@ -41,6 +49,8 @@ def save_profile(base_dir, username, password, folder="INBOX", auto_create=False
         "smtp_tls": False,
         "folder": folder,
         "auto_create": bool(auto_create),
+        "sync_sent": bool(sync_sent),
+        "sent_folder": sent_folder,
         "enabled": True,
     }
     temporary = base_dir / (FILENAME + ".tmp")

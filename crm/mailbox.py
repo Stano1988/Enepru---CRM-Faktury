@@ -8,7 +8,7 @@ import re
 import ssl
 from email import policy
 from email.parser import BytesParser
-from email.utils import parseaddr, parsedate_to_datetime
+from email.utils import getaddresses, parseaddr, parsedate_to_datetime
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -80,12 +80,18 @@ class PlainHTML(HTMLParser):
 
 
 @transaction.atomic
-def import_email(raw, source="Soubor EML"):
+def import_email(raw, source="Soubor EML", outgoing=False):
     if len(raw) > MAX_EMAIL_BYTES:
         raise ValidationError("E-mail smí mít nejvýše 25 MB.")
     fingerprint = hashlib.sha256(raw).hexdigest()
     existing = ReceivedMail.objects.filter(fingerprint=fingerprint).first()
     if existing:
+        if outgoing and not existing.is_sent:
+            existing.is_sent = True
+            existing.save(update_fields=["is_sent"])
+        elif not outgoing and not existing.is_received:
+            existing.is_received = True
+            existing.save(update_fields=["is_received"])
         return existing, False
     try:
         parsed = BytesParser(policy=policy.default).parsebytes(raw)
@@ -117,12 +123,45 @@ def import_email(raw, source="Soubor EML"):
             Message.objects.filter(
                 message_id__in=references,
                 to__iexact=sender_email,
-                inquiry__isnull=False,
             )
             .order_by("-id")
             .first()
         )
+        recipients = [
+            address
+            for name, address in getaddresses(
+                parsed.get_all("To", []) + parsed.get_all("Cc", [])
+            )
+            if address
+        ][:30]
+        own_message = (
+            Message.objects.filter(message_id=str(parsed.get("Message-ID", "")))
+            .exclude(message_id="")
+            .first()
+            if outgoing
+            else None
+        )
+        external_parent = (
+            ReceivedMail.objects.filter(message_id__in=references)
+            .exclude(inquiry__isnull=True, job__isnull=True)
+            .order_by("-received_at")
+            .first()
+        )
+        if (
+            external_parent
+            and not outgoing
+            and sender_email.casefold()
+            not in [address.casefold() for address in external_parent.recipients]
+            and sender_email.casefold() != external_parent.sender_email.casefold()
+        ):
+            external_parent = None
+        linked = own_message or parent or external_parent
         mail = ReceivedMail.objects.create(
+            is_received=not outgoing,
+            is_sent=outgoing,
+            recipients=recipients,
+            job=linked.job if linked else None,
+            invoice=linked.invoice if linked else None,
             fingerprint=fingerprint,
             message_id=str(parsed.get("Message-ID", ""))[:998],
             references=references,
@@ -132,7 +171,7 @@ def import_email(raw, source="Soubor EML"):
             body=body[:200000],
             sent_at=sent_at,
             source=source[:100],
-            inquiry=parent.inquiry if parent else None,
+            inquiry=linked.inquiry if linked else None,
         )
         structured = {}
         structured_verified = False
@@ -257,8 +296,8 @@ def import_email(raw, source="Soubor EML"):
             )
         mail.skipped_attachments = skipped
         mail.save(update_fields=["skipped_attachments"])
-        if parent:
-            inquiry = parent.inquiry
+        if linked and linked.inquiry_id and not outgoing:
+            inquiry = linked.inquiry
             inquiry.last_reply_at = timezone.now()
             if inquiry.status == "waiting":
                 inquiry.status = "review"
@@ -293,8 +332,8 @@ def import_email(raw, source="Soubor EML"):
             event(
                 None,
                 "Přijata e-mailová odpověď k poptávce",
-                parent.job,
-                inquiry=parent.inquiry_id,
+                linked.job,
+                inquiry=linked.inquiry_id,
                 mail=mail.pk,
             )
         return mail, True
@@ -309,6 +348,10 @@ def mail_to_inquiry(mail, user=None):
     mail = ReceivedMail.objects.select_for_update().get(pk=mail.pk)
     if mail.inquiry_id:
         return mail.inquiry
+    if not mail.is_received:
+        raise ValidationError(
+            "Odeslaná zpráva není nová poptávka. Přiřaďte ji k existujícímu záznamu."
+        )
     if mail.structured:
         if mail.structured_error:
             raise ValidationError(mail.structured_error)
@@ -376,7 +419,7 @@ def mail_to_inquiry(mail, user=None):
     return inquiry
 
 
-def sync_mailbox():
+def _sync_folder(folder, outgoing=False):
     """IMAP PEEK + readonly SELECT: never delete, move, or mark user mail read."""
     if not settings.CRM_IMAP_ENABLED:
         raise ValidationError(
@@ -397,7 +440,7 @@ def sync_mailbox():
             timeout=20,
         ) as mailbox:
             mailbox.login(settings.CRM_IMAP_USER, settings.CRM_IMAP_PASSWORD)
-            status, _ = mailbox.select(settings.CRM_IMAP_FOLDER, readonly=True)
+            status, _ = mailbox.select(folder, readonly=True)
             if status != "OK":
                 raise RuntimeError("Složka není dostupná.")
             _, validity = mailbox.response("UIDVALIDITY")
@@ -407,7 +450,7 @@ def sync_mailbox():
             if not validity_value.isdigit():
                 raise RuntimeError("Server neposkytl identitu složky.")
             key = hashlib.sha256(
-                f"{settings.CRM_IMAP_HOST}:{settings.CRM_IMAP_USER}:{settings.CRM_IMAP_FOLDER}:{validity_value}".encode()
+                f"{settings.CRM_IMAP_HOST}:{settings.CRM_IMAP_USER}:{folder}:{validity_value}".encode()
             ).hexdigest()
             cursor, _ = MailboxCursor.objects.get_or_create(key=key)
             status, data = mailbox.uid("search", None, "ALL")
@@ -434,8 +477,15 @@ def sync_mailbox():
                 raw = next((item[1] for item in items if isinstance(item, tuple)), None)
                 if status != "OK" or raw is None:
                     raise RuntimeError("Načítání zprávy selhalo.")
-                mail, created = import_email(raw, "IMAP: " + settings.CRM_IMAP_FOLDER)
-                if settings.CRM_IMAP_AUTO_CREATE:
+                mail, created = import_email(raw, "IMAP: " + folder, outgoing=outgoing)
+                if not outgoing and (
+                    settings.CRM_IMAP_AUTO_CREATE
+                    or (
+                        settings.CRM_IMAP_AUTO_WEB
+                        and mail.structured
+                        and not mail.structured_error
+                    )
+                ):
                     try:
                         mail_to_inquiry(mail)
                     except ValidationError as error:
@@ -464,3 +514,11 @@ def sync_mailbox():
         raise ValidationError(
             "Příjem pošty selhal. Zkontrolujte bezpečné nastavení IMAP a dostupnost serveru."
         ) from error
+
+
+def sync_mailbox():
+    imported = _sync_folder(settings.CRM_IMAP_FOLDER)
+    if getattr(settings, "CRM_IMAP_SYNC_SENT", False):
+        imported += _sync_folder(settings.CRM_IMAP_SENT_FOLDER, outgoing=True)
+    MailboxSync.objects.create(imported=imported)
+    return imported

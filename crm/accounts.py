@@ -17,6 +17,56 @@ from django_otp.plugins.otp_totp.models import TOTPDevice
 from .models import Access
 from .office import form_page, manager
 
+PERMISSION_NAMES = {
+    "client": "Klienti",
+    "sequence": "Číselné řady zakázek",
+    "job": "Zakázky",
+    "note": "Poznámky",
+    "change": "Historie zakázek",
+    "access": "Přístup uživatelů",
+    "company": "Údaje firmy",
+    "contact": "Kontaktní osoby",
+    "property": "Evidence nemovitostí (volitelné)",
+    "inquiry": "Poptávky",
+    "offer": "Nabídky",
+    "folder": "Složky",
+    "document": "Dokumenty",
+    "task": "Úkoly a zaměření",
+    "requirement": "Starší požadavky na podklady",
+    "expense": "Náklady a odměny",
+    "invoice": "Faktury",
+    "invoiceline": "Text faktury",
+    "payment": "Úhrady",
+    "banktransaction": "Importované bankovní platby",
+    "message": "Odchozí pošta",
+    "automation": "Automatizace",
+    "event": "Události",
+    "handover": "Předání",
+    "inquiryattachment": "Přílohy poptávek",
+    "clientlink": "Odkazy pro klienty",
+    "extrawork": "Vícepráce",
+    "notification": "Upozornění",
+    "priceitem": "Ceník (volitelné)",
+    "clientchange": "Historie klientů",
+    "calendarentry": "Vlastní zápisy v kalendáři",
+    "receivedmail": "Přijatá pošta",
+    "mailattachment": "Přílohy pošty",
+    "mailboxcursor": "Stav příjmu pošty",
+    "mailboxsync": "Kontroly schránky",
+    "websitesource": "Připojené weby",
+}
+
+
+class CzechPermissions(forms.ModelMultipleChoiceField):
+    def label_from_instance(self, obj):
+        action = {
+            "add": "vytvářet",
+            "change": "upravovat",
+            "delete": "mazat",
+            "view": "prohlížet",
+        }.get(obj.codename.split("_", 1)[0], "spravovat")
+        return f"{PERMISSION_NAMES.get(obj.content_type.model, 'Ostatní nastavení')} — {action}"
+
 
 class UserForm(forms.ModelForm):
     password = forms.CharField(
@@ -27,9 +77,11 @@ class UserForm(forms.ModelForm):
     all_jobs = forms.BooleanField(label="Vidí všechny zakázky", required=False)
     finances = forms.BooleanField(label="Vidí finance a ceny", required=False)
     export = forms.BooleanField(label="Smí exportovat", required=False)
-    user_permissions = forms.ModelMultipleChoiceField(
+    user_permissions = CzechPermissions(
         label="Povolené činnosti",
-        queryset=Permission.objects.filter(content_type__app_label="crm"),
+        queryset=Permission.objects.filter(content_type__app_label="crm")
+        .select_related("content_type")
+        .order_by("content_type__model", "codename"),
         widget=forms.CheckboxSelectMultiple,
         required=False,
     )
@@ -88,7 +140,11 @@ def user_edit(request, pk=None):
                     },
                 )
             return redirect("users")
-    return form_page(request, form, "Uživatel a jeho oprávnění")
+    return render(
+        request,
+        "crm/user_form.html",
+        {"form": form, "title": "Uživatel a jeho oprávnění"},
+    )
 
 
 class TokenForm(forms.Form):

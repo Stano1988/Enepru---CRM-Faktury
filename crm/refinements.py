@@ -124,12 +124,20 @@ def calendar_entry_delete(request, pk):
 @permission_required("crm.view_receivedmail", raise_exception=True)
 def inbox(request):
     manager(request.user)
+    from .sorting import ordered
+
     return render(
         request,
         "crm/inbox.html",
         {
-            "mail_list": ReceivedMail.objects.select_related("inquiry"),
+            "mail_list": ordered(
+                ReceivedMail.objects.filter(is_received=True).select_related("inquiry"),
+                request,
+                {"sender_name", "sender_email", "subject", "received_at"},
+                "-received_at",
+            ),
             "imap_enabled": settings.CRM_IMAP_ENABLED,
+            "imap_folder": settings.CRM_IMAP_FOLDER,
             "last_sync": MailboxSync.objects.first(),
         },
     )
@@ -391,6 +399,11 @@ def documents(request):
         docs = docs.filter(Q(name__icontains=query) | Q(job__number__icontains=query))
     if request.GET.get("standalone"):
         docs = docs.filter(job__isnull=True)
+    from .sorting import ordered
+
+    docs = ordered(
+        docs, request, {"name", "job__number", "created_at", "version"}, "-created_at"
+    )
     return render(request, "crm/documents.html", {"documents": docs, "query": query})
 
 

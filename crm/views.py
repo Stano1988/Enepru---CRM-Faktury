@@ -90,6 +90,11 @@ def clients(request):
             | Q(company_id__icontains=query)
             | Q(phone__icontains=query)
         )
+    from .sorting import ordered
+
+    qs = ordered(
+        qs, request, {"name", "email", "phone", "company_id", "billing_address"}, "name"
+    )
     return render(
         request,
         "crm/clients.html",
@@ -108,7 +113,9 @@ def client_new(request):
         client.created_by = request.user
         client.save()
         return redirect("client_detail", pk=client.pk)
-    return render(request, "crm/form.html", {"form": form, "title": "Nový klient"})
+    return render(
+        request, "crm/client_form.html", {"form": form, "title": "Nový klient"}
+    )
 
 
 @login_required
@@ -174,6 +181,16 @@ def job_detail(request, pk):
             "job": job,
             "form": form,
             "documents": docs,
+            "job_mail": __import__(
+                "crm.models", fromlist=["ReceivedMail"]
+            ).ReceivedMail.objects.filter(Q(job=job) | Q(inquiry__job=job))
+            if request.user.is_superuser
+            else [],
+            "job_messages": __import__(
+                "crm.models", fromlist=["Message"]
+            ).Message.objects.filter(Q(job=job) | Q(inquiry__job=job))
+            if request.user.is_superuser
+            else [],
             "history": history,
             "can_finance": finance(request.user),
         },
@@ -199,7 +216,7 @@ def job_edit(request, pk):
             "new_client_phone",
             "new_client_address",
         ]:
-            form.fields.pop(field)
+            form.fields.pop(field, None)
     if not finance(request.user):
         form.fields.pop("agreed_price", None)
         form.fields.pop("billing_text", None)

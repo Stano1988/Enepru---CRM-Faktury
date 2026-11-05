@@ -224,3 +224,14 @@ CRM_WEBSITE_KEYS = load_keys(BASE_DIR)
 CRM_WEBHOOK_SECRET = os.environ.get(
     "CRM_WEBHOOK_SECRET", CRM_WEBSITE_KEYS.get("CRM_WEBHOOK_SECRET", "")
 )
+
+CRM_IMAP_SYNC_SENT = (
+    os.environ.get("CRM_IMAP_SYNC_SENT", "1" if MAIL_PROFILE.get("sync_sent") else "0")
+    == "1"
+)
+CRM_IMAP_SENT_FOLDER = os.environ.get(
+    "CRM_IMAP_SENT_FOLDER", MAIL_PROFILE.get("sent_folder", "Sent")
+)
+
+# Web forms become leads automatically; ordinary personal email requires a click.
+CRM_IMAP_AUTO_WEB = os.environ.get("CRM_IMAP_AUTO_WEB", "1") == "1"
