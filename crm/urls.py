@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import accounts, office, refinements, views
+from . import accounts, document_tools, office, refinements, views
 
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
@@ -191,4 +191,18 @@ urlpatterns += [
     path(
         "documents/<int:pk>/assign/", refinements.library_assign, name="library_assign"
     ),
+]
+
+from . import offers
+
+urlpatterns += [
+    path("offers/<int:pk>/pdf/", offers.download, name="offer_pdf"),
+    path("offers/<int:pk>/revoke/", offers.revoke, name="offer_revoke"),
+]
+
+urlpatterns += [
+    path(
+        "documents/<int:pk>/preview/", document_tools.preview, name="document_preview"
+    ),
+    path("documents/bundle/", document_tools.bundle, name="document_bundle"),
 ]

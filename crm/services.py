@@ -110,6 +110,10 @@ def create_offer(inquiry, cleaned, user):
     offer = Offer.objects.create(
         inquiry=inquiry, version=(latest.version + 1 if latest else 1), **cleaned
     )
+    from .offers import make_pdf
+
+    offer.pdf = make_pdf(offer)
+    offer.save(update_fields=["pdf"])
     event(user, "Vytvořena verze nabídky", offer=offer.pk, inquiry=inquiry.pk)
     return offer
 
@@ -117,6 +121,7 @@ def create_offer(inquiry, cleaned, user):
 def offer_available(offer):
     return (
         not offer.revoked
+        and not offer.accepted_at
         and not offer.declined_at
         and offer.valid_until >= timezone.localdate()
     )
@@ -257,12 +262,9 @@ def qr_png(invoice):
 
 
 def invoice_pdf(invoice):
-    from reportlab import __file__ as rl_file
     from reportlab.lib import colors
     from reportlab.lib.styles import getSampleStyleSheet
     from reportlab.lib.units import mm
-    from reportlab.pdfbase import pdfmetrics
-    from reportlab.pdfbase.ttfonts import TTFont
     from reportlab.platypus import (
         Image,
         Paragraph,
@@ -272,13 +274,12 @@ def invoice_pdf(invoice):
         TableStyle,
     )
 
-    # ReportLab bundles Vera; using it avoids dependence on Windows/Linux fonts.
-    font = Path(rl_file).parent / "fonts" / "Vera.ttf"
-    if "CRM" not in pdfmetrics.getRegisteredFontNames():
-        pdfmetrics.registerFont(TTFont("CRM", str(font)))
+    from .pdf_fonts import register
+
+    font_name = register()
     styles = getSampleStyleSheet()
     for style in styles.byName.values():
-        style.fontName = "CRM"
+        style.fontName = font_name
     normal = styles["Normal"]
     normal.leading = 15
 
@@ -585,6 +586,18 @@ def send_message(message, user=None):
             bytes(message.invoice.pdf),
             "application/pdf",
         )
+    if message.offer:
+        from .offers import make_pdf
+
+        offer = message.offer
+        if not offer.pdf:
+            offer.pdf = make_pdf(offer)
+            offer.save(update_fields=["pdf"])
+        mail.attach(
+            f"Nabidka-P{offer.inquiry_id:05d}-v{offer.version}.pdf",
+            bytes(offer.pdf),
+            "application/pdf",
+        )
     try:
         if mail.send(fail_silently=False) != 1:
             raise RuntimeError("Mail backend nepřijal zprávu.")
@@ -885,6 +898,9 @@ def run_daily():
             state="draft", dedupe_key__startswith="ack:"
         ):
             send_message(message)
+    from .offers import prepare_followups
+
+    prepare_followups()
     return prepare_reminders()
 
 

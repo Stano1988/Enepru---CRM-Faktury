@@ -296,6 +296,8 @@ class Inquiry(models.Model):
     website = models.ForeignKey(
         "WebsiteSource", null=True, blank=True, on_delete=models.PROTECT
     )
+    intake_verified = models.BooleanField(default=False)
+    source_details = models.JSONField(default=dict, blank=True)
     intake_hash = models.CharField(max_length=64, blank=True)
     last_reply_at = models.DateTimeField(null=True, blank=True)
     name = models.CharField("Jméno / firma", max_length=200)
@@ -342,6 +344,7 @@ class Offer(models.Model):
     sent_at = models.DateTimeField(null=True, blank=True)
     accepted_at = models.DateTimeField(null=True, blank=True)
     declined_at = models.DateTimeField(null=True, blank=True)
+    pdf = models.BinaryField(default=bytes, blank=True, editable=False)
     acceptance = models.JSONField(default=dict, blank=True)
     revoked = models.BooleanField(default=False)
 
@@ -871,6 +874,9 @@ class CalendarEntry(models.Model):
 
 
 class ReceivedMail(models.Model):
+    structured = models.JSONField(default=dict, blank=True)
+    structured_verified = models.BooleanField(default=False)
+    structured_error = models.CharField(max_length=300, blank=True)
     fingerprint = models.CharField(max_length=64, unique=True)
     message_id = models.CharField(max_length=998, blank=True)
     references = models.JSONField(default=list)

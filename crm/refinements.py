@@ -3,9 +3,7 @@
 import hashlib
 import hmac
 import json
-import os
 import time
-import uuid
 from datetime import datetime
 
 from django import forms
@@ -22,7 +20,7 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
-from .forms import CalendarEntryForm, InquiryForm
+from .forms import CalendarEntryForm
 from .mailbox import MAX_EMAIL_BYTES, import_email, mail_to_inquiry, sync_mailbox
 from .models import (
     CalendarEntry,
@@ -176,7 +174,11 @@ def email_convert(request, pk):
     manager(request.user)
     if not request.user.has_perm("crm.view_receivedmail"):
         raise PermissionDenied
-    inquiry = mail_to_inquiry(get_object_or_404(ReceivedMail, pk=pk), request.user)
+    try:
+        inquiry = mail_to_inquiry(get_object_or_404(ReceivedMail, pk=pk), request.user)
+    except ValidationError as error:
+        messages.error(request, "; ".join(error.messages))
+        return redirect("received_mail", pk=pk)
     messages.success(
         request,
         "Poptávka uložena. Zkontrolujte službu a doplňte adresu nemovitosti před nabídkou.",
@@ -214,16 +216,14 @@ def email_sync(request):
 def website_inquiry(request, slug="enepru"):
     # Machine-to-machine endpoint: HMAC is the authentication, never a browser secret.
     source = get_object_or_404(WebsiteSource, slug=slug, active=True)
-    secret = (
-        settings.CRM_WEBHOOK_SECRET
-        if source.secret_env == "CRM_WEBHOOK_SECRET"
-        else os.environ.get(source.secret_env, "")
-    )
+    from .intake import decoded_attachments, receive, website_secret
+
+    secret = website_secret(source)
     if not secret:
         return JsonResponse(
             {"error": "Napojení tohoto webu není nastavené."}, status=503
         )
-    if len(request.body) > 1024 * 1024:
+    if len(request.body) > 24 * 1024 * 1024:
         return JsonResponse({"error": "Příliš velký požadavek."}, status=413)
     stamp = request.headers.get("X-CRM-Timestamp", "")
     try:
@@ -238,43 +238,15 @@ def website_inquiry(request, slug="enepru"):
         return JsonResponse({"error": "Neplatný podpis."}, status=403)
     try:
         data = json.loads(request.body)
-        external_key = uuid.UUID(data["external_id"])
-        key = uuid.uuid5(uuid.NAMESPACE_URL, f"{source.slug}:{external_key}")
-        if not isinstance(data, dict):
-            raise ValueError
-    except (ValueError, KeyError, TypeError):
-        return JsonResponse({"error": "Neplatné JSON nebo external_id."}, status=400)
-    form = InquiryForm(data)
-    if not form.is_valid():
-        return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
-    digest = hashlib.sha256(
-        json.dumps(form.cleaned_data, sort_keys=True, default=str).encode()
-    ).hexdigest()
-    with transaction.atomic():
-        obj, created = Inquiry.objects.get_or_create(
-            submission_key=key,
-            defaults={
-                **form.cleaned_data,
-                "source": source.name,
-                "website": source,
-                "intake_hash": digest,
-            },
+        attachments = decoded_attachments(data.get("attachments", []))
+        obj, created = receive(source, data, attachments=attachments)
+    except (ValueError, TypeError, AttributeError):
+        return JsonResponse({"error": "Neplatné JSON."}, status=400)
+    except ValidationError as error:
+        return JsonResponse(
+            {"error": "; ".join(error.messages)},
+            status=409 if getattr(error, "code", None) == "conflict" else 400,
         )
-        if not created:
-            if obj.intake_hash != digest:
-                return JsonResponse(
-                    {"error": "Stejné external_id již obsahuje jinou poptávku."},
-                    status=409,
-                )
-        else:
-            Message.objects.create(
-                inquiry=obj,
-                to=obj.email,
-                subject="Přijali jsme vaši poptávku",
-                body=f"Dobrý den, přijali jsme poptávku P{obj.pk:05d}. Ozveme se s nabídkou. Toto není potvrzení objednávky.",
-                dedupe_key=f"ack:{obj.pk}",
-            )
-            event(None, "Přijata podepsaná poptávka z webu", inquiry=obj.pk)
     return JsonResponse(
         {"id": obj.pk, "number": f"P{obj.pk:05d}", "created": created},
         status=201 if created else 200,
@@ -341,11 +313,9 @@ def websites(request, pk=None):
         return redirect("websites")
     sources = []
     for item in WebsiteSource.objects.all():
-        ready = bool(
-            settings.CRM_WEBHOOK_SECRET
-            if item.secret_env == "CRM_WEBHOOK_SECRET"
-            else os.environ.get(item.secret_env)
-        )
+        from .intake import website_secret
+
+        ready = bool(website_secret(item))
         sources.append(
             {
                 "source": item,

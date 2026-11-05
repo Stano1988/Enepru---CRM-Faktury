@@ -1,7 +1,9 @@
 """Read-only mail intake. External HTML is converted to text, never rendered."""
 
 import hashlib
+import hmac
 import imaplib
+import json
 import re
 import ssl
 from email import policy
@@ -27,6 +29,7 @@ from .models import (
     MailboxSync,
     Message,
     ReceivedMail,
+    WebsiteSource,
 )
 from .services import event
 
@@ -131,16 +134,115 @@ def import_email(raw, source="Soubor EML"):
             source=source[:100],
             inquiry=parent.inquiry if parent else None,
         )
+        structured = {}
+        structured_verified = False
+        structured_error = ""
+        metadata_parts = [
+            part
+            for part in parsed.walk()
+            if part.get_content_type() == "application/vnd.enepru.inquiry+json"
+        ]
+        if len(metadata_parts) > 1:
+            structured_error = (
+                "Více metadat poptávky v jednom e-mailu. Vyžaduje kontrolu."
+            )
+        elif metadata_parts:
+            raw_meta = metadata_parts[0].get_payload(decode=True) or b""
+            try:
+                if len(raw_meta) > 64000:
+                    raise ValueError
+                structured = json.loads(raw_meta)
+                if (
+                    not isinstance(structured, dict)
+                    or structured.get("schema") != "enepru.inquiry.v1"
+                ):
+                    raise ValueError
+                source_obj = WebsiteSource.objects.filter(
+                    slug=structured.get("source_slug"), active=True
+                ).first()
+                if not source_obj:
+                    structured_error = (
+                        "Neznámý nebo vypnutý web. Zkontrolujte zdroj v nastavení webů."
+                    )
+                else:
+                    from .intake import website_secret
+
+                    secret = website_secret(source_obj)
+                    signature = str(parsed.get("X-CRM-Mail-Signature", ""))
+                    if secret:
+                        structured_verified = hmac.compare_digest(
+                            hmac.new(
+                                secret.encode(), raw_meta, hashlib.sha256
+                            ).hexdigest(),
+                            signature,
+                        )
+                        if not structured_verified:
+                            structured_error = "Podpis údajů poptávky neodpovídá. Zkontrolujte propojení webu."
+            except (ValueError, TypeError):
+                structured = {}
+                structured_error = "Neplatná metadata webové poptávky."
+        elif str(parsed.get("Subject", "")).startswith("Nezávazná poptávka"):
+            # Backward-compatible ENEPRU mail: the client is in Reply-To, not From.
+            _, reply_to = parseaddr(str(parsed.get("Reply-To", "")))
+            labels = {}
+            for line in body.splitlines():
+                key, sep, value = line.partition(":")
+                if sep and key not in labels:
+                    labels[key] = value.strip()
+            if reply_to and labels.get("E-mail", "").casefold() == reply_to.casefold():
+                validate_email(reply_to)
+                import uuid
+
+                address = labels.get("Adresa", "")
+                if not address:
+                    address = ", ".join(
+                        labels.get(key, "")
+                        for key in [
+                            "Obec",
+                            "Číslo popisné / parcelní",
+                            "Katastrální území",
+                        ]
+                        if labels.get(key)
+                    )
+                service = (
+                    "passport"
+                    if "pasport" in mail.subject.casefold()
+                    else ("other" if "dotaz" in mail.subject.casefold() else "penb")
+                )
+                if service == "penb" and labels.get("Také pasport") == "True":
+                    service = "both"
+                structured = {
+                    "schema": "enepru.inquiry.v1",
+                    "source_slug": "enepru",
+                    "external_id": str(
+                        uuid.uuid5(uuid.NAMESPACE_URL, "legacy-mail:" + fingerprint)
+                    ),
+                    "name": labels.get("Jméno") or reply_to,
+                    "email": reply_to,
+                    "phone": labels.get("Telefon", ""),
+                    "address": address,
+                    "service": service,
+                    "description": body,
+                    "source_details": {"legacy_mail": True},
+                }
+        mail.structured = structured
+        mail.structured_verified = structured_verified
+        mail.structured_error = structured_error
+        mail.save(
+            update_fields=["structured", "structured_verified", "structured_error"]
+        )
         skipped = []
         total = 0
         count = 0
         for part in parsed.iter_attachments():
+            if part.get_content_type() == "application/vnd.enepru.inquiry+json":
+                continue
             name = Path(part.get_filename() or "priloha").name[:240]
             content = part.get_payload(decode=True)
             if (
                 not content
                 or Path(name).suffix.lower() not in ALLOWED
-                or count >= 5
+                or count >= 10
                 or total + len(content) > MAX_EMAIL_BYTES
             ):
                 skipped.append(name)
@@ -207,6 +309,41 @@ def mail_to_inquiry(mail, user=None):
     mail = ReceivedMail.objects.select_for_update().get(pk=mail.pk)
     if mail.inquiry_id:
         return mail.inquiry
+    if mail.structured:
+        if mail.structured_error:
+            raise ValidationError(mail.structured_error)
+        from .intake import receive
+
+        source_obj = WebsiteSource.objects.filter(
+            slug=mail.structured.get("source_slug"), active=True
+        ).first()
+        if not source_obj:
+            raise ValidationError("Neznámý nebo vypnutý zdroj webu.")
+        files = []
+        for attachment in mail.attachments.order_by("pk"):
+            with attachment.file.open("rb") as stream:
+                content = stream.read()
+            files.append((attachment.name, content, attachment.sha256))
+        manifest = mail.structured.get("attachment_manifest")
+        if mail.structured_verified and manifest != [
+            {"name": name, "sha256": digest} for name, content, digest in files
+        ]:
+            raise ValidationError(
+                "Podklady neodpovídají podepsanému seznamu příloh. Zkontrolujte úplnost zprávy."
+            )
+        inquiry, created = receive(
+            source_obj,
+            mail.structured,
+            attachments=files,
+            actor=user,
+            ack=False,
+            verified=mail.structured_verified,
+        )
+        mail.inquiry = inquiry
+        mail.save(update_fields=["inquiry"])
+        return inquiry
+    if mail.structured_error:
+        raise ValidationError(mail.structured_error)
     text = (mail.subject + "\n" + mail.body).casefold()
     penb = "penb" in text or "energetick" in text
     passport = "pasport" in text
@@ -299,7 +436,11 @@ def sync_mailbox():
                     raise RuntimeError("Načítání zprávy selhalo.")
                 mail, created = import_email(raw, "IMAP: " + settings.CRM_IMAP_FOLDER)
                 if settings.CRM_IMAP_AUTO_CREATE:
-                    mail_to_inquiry(mail)
+                    try:
+                        mail_to_inquiry(mail)
+                    except ValidationError as error:
+                        mail.structured_error = "; ".join(error.messages)[:300]
+                        mail.save(update_fields=["structured_error"])
                 imported += int(created)
                 with transaction.atomic():
                     locked = MailboxCursor.objects.select_for_update().get(pk=cursor.pk)

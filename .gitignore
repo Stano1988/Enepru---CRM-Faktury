@@ -12,3 +12,6 @@ backups/
 
 .mail-settings.json
 .mail-settings.json.tmp
+
+.web-settings.json
+.web-settings.json.tmp

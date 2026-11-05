@@ -300,7 +300,15 @@ def public_offer(request, token):
     obj = get_object_or_404(Offer.objects.select_related("inquiry"), token=token)
     available = offer_available(obj)
     form = f.AcceptForm(request.POST or None, initial={"name": obj.inquiry.name})
-    if request.method == "POST" and form.is_valid():
+    if request.method == "POST" and request.POST.get("action") == "decline":
+        from .offers import decline
+
+        try:
+            decline(obj)
+            return redirect("public_offer", token=token)
+        except ValidationError as error:
+            form.add_error(None, error)
+    elif request.method == "POST" and form.is_valid():
         try:
             accept_offer(
                 obj, {k: v for k, v in form.cleaned_data.items() if k != "consent"}
@@ -1075,6 +1083,25 @@ def reports(request):
                 "contribution": j.agreed_price - jcost,
             }
         )
+    from django.db.models.functions import TruncMonth
+
+    monthly = []
+    months = {}
+    for row in (
+        payments.annotate(month=TruncMonth("date"))
+        .values("month")
+        .annotate(
+            receipts=Sum("amount", filter=Q(kind="receipt")),
+            refunds=Sum("amount", filter=Q(kind="refund")),
+        )
+    ):
+        if row["month"]:
+            months[row["month"]] = (row["receipts"] or Decimal("0")) - (
+                row["refunds"] or Decimal("0")
+            )
+    for month, amount in sorted(months.items()):
+        monthly.append({"month": month, "received": amount})
+    chart_max = max([abs(row["received"]) for row in monthly] + [Decimal("1")])
     if request.GET.get("export") == "csv":
         if not export_allowed(request.user):
             raise PermissionDenied
@@ -1113,6 +1140,13 @@ def reports(request):
         "crm/reports.html",
         {
             "period": form,
+            "monthly": monthly,
+            "chart_max": chart_max,
+            "regions": list(
+                inq.values("source_details__region")
+                .annotate(count=Count("id"))
+                .order_by("-count")
+            ),
             "agreed": jobs.aggregate(n=Sum("agreed_price"))["n"] or 0,
             "billed": billed,
             "received": received,

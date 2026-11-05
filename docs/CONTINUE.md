@@ -1,5 +1,14 @@
 # Pokračování práce — aktuální stav 5. 11. 2026
 
+## Nejnovější dodání — skutečný web a distribuční verze
+
+Uživatel chce dokončení a odkaz ke stažení. Skutečný web je `/workspace/enepru-web`, vlastní stdlib Python aplikace, origin Stano1988/enepru-web. Web-Sl je prázdný a není integrační zdroj. Změny obou repozitářů jsou součástí dodávky: strukturovaný podepsaný metadata e-mail + HMAC HTTPS s přílohami a trvalou frontou při výpadku. CRM jednotný intake přes oba kanály, stejné ID/content hash, 10 příloh, správný zákazník z formuláře místo SMTP From, legacy Reply-To, odmítnutí špatného podpisu. Kalkulace webu není potvrzená cena. Windows Pripojit-web.bat ukládá klíč pouze do keyring, metadata .web-settings.json ignorovaná. Živé nasazení/hesla stále nejsou k dispozici. Dřívější poznámka níže o chybějícím zdroji už neplatí.
+
+Doplněny uložené PDF nabídky a příloha e-mailu, odmítnutí klientem, návrh připomínky po 5 dnech, izolovaný náhled PDF/obrázků, výběrový ZIP s oprávněními, měsíční čisté příjmy a kraje v reportu. Denní místní záloha ve spouštěči s 30denní rotací, CRM_BACKUP_DIR může mířit na jiný disk; neprohlašovat výchozí místní zálohu za ochranu před poruchou PC. Migrace 0022/0023. Původní data se zachovávají. Závěrečně 82 Django + 17 web + 6 společných testů prošlo, stejně browser, upgrade DB a skutečná denní záloha. Nalezenou chybějící diakritiku Vera opravil přibalený DejaVu Sans s licencí; nové nabídky a faktury ověřené pypdf. Uložené staré PDF se nepřepisují.
+
+Kontroly a přesný rozsah viz FEATURES.md a RELEASE-2026-11-05.md. Nadále zbývají rozšíření evidovaná v FEATURES.md (opravné doklady, více záloh, externí import, slučování klientů atd.); netvrdit úplné dokončení celého rozšířeného seznamu. Zdrojový ZIP není veřejně hostované CRM ani samostatné EXE.
+
+
 ## Nejnovější změna zadání a implementace — 5. 11. 2026
 
 Majitel požaduje zjednodušení, ne další povinné kroky. Každá agenda musí fungovat samostatně: klient, přímá nabídka bez poptávky, zakázka bez nabídky a s klientem založeným na místě, faktura bez zakázky i bez předchozí klientské karty, kalendář a dokumenty bez zakázky. Interní vazby nesmějí uživatele nutit procházet předchozí kapitoly.

@@ -4,6 +4,8 @@ Webové CRM v češtině pro Windows a mobilní prohlížeč. Data se ukládají
 
 ![Přehled zakázek na testovacích datech](docs/screenshots/prehled.png)
 
+[Stáhnout CRM jako ZIP](https://github.com/Stano1988/Enepru---CRM-Faktury/archive/refs/heads/main.zip) · [Co je v této verzi a jak aktualizovat](docs/RELEASE-2026-11-05.md)
+
 ## Úpravy podle připomínek z 5. listopadu
 
 - **Faktura bez tabulky položek:** volný text „Fakturujeme vám za…“ a jedna celková cena. Z nabídky se cena přenese do zakázky a z ní do faktury. Text a cenu lze upravit i samostatně.

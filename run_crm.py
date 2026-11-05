@@ -55,6 +55,9 @@ def main():
             try:
                 close_old_connections()
                 run_daily()
+                from crm.auto_backup import daily_backup
+
+                daily_backup()
             except Exception:
                 print("Automatizace nedokončena; zkontrolujte správu CRM.")
             finally:

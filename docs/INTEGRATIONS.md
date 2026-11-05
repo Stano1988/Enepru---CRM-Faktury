@@ -62,11 +62,24 @@ Hlavičky:
 
 Čas je platný pět minut. Při opakovaném doručení se vrátí existující záznam, při jiném obsahu se stejným ID konflikt 409. Úprava záznamu uvnitř CRM neporuší pozdější doručovací retry. Vrací se 201 při vytvoření, 200 při opakování, 400 při neplatných údajích, 403 při neplatném podpisu a 503 při chybějícím klíči. Zakázaný zdroj vrací 404. API samo neumožňuje nastavit stav potvrzeno nebo libovolného uživatele.
 
-Napojení musí být v backendu skutečného webového formuláře; po selhání má zachovat požadavek a opakovat doručení. Přílohy lze nyní poslat e-mailem nebo dodat do klientského odkazu; JSON API jejich přenos zatím neimplementuje.
+Napojení musí být v backendu skutečného webového formuláře; po selhání má zachovat požadavek a opakovat doručení. JSON podporuje `attachments`: seznam `{name, content, sha256}`, kde content je base64 a sha256 je kontrolní součet původního souboru. Nejvýše 10 souborů, 10 MB na jeden a 15 MB celkem. Lze přidat `source_details` s původní orientační kalkulací. Přímé API i strukturovaný e-mail používají stejný identifikátor a obsah pro deduplikaci.
 
 ## Skutečný stav napojení
 
 - Podepisování, dvě nezávislé domény/klíče, replay, konflikty, převod EML, odpovědi a readonly IMAP byly otestovány izolovaně.
 - Žádné skutečné heslo není v projektu a při testech nebyl odeslán skutečný e-mail.
 - HTTPS kontrolu enepru.cz v cloudovém prostředí zablokoval proxy CONNECT 403. Potřebné domény byly přidány pouze do návrhu síťové konfigurace, nikoliv aktivovány.
-- Pro úpravu živého formuláře chybí informace o jeho platformě / přístup ke zdrojovému kódu. Aplikace není veřejně nasazená. Živé napojení tedy není potvrzené.
+- Skutečný zdroj je nyní dostupný v repozitáři Stano1988/enepru-web a byl upraven. Jde o vlastní Python aplikaci, nikoli WordPress. Šest společných testů ověřuje skutečný kód obou projektů. Nasazení změn na hosting a živé doručení zatím nejsou potvrzené.
+
+
+## Připojení skutečného webu Enepru
+
+**Windows bez veřejného CRM:** nasaďte změněný `app.py` i nový `crm_bridge.py` z enepru-web. Web dál odešle zprávu přes již nastavené SMTP. Přidává strojově čitelnou přílohu `enepru-poptavka.json`; nahrané podklady zůstávají běžnými přílohami. V CRM připojte schránku a vyberte složku pro poptávky. Pro automatické vytváření je nutné zapnout převod této složky. Bez automatického režimu zůstává tlačítko Vytvořit poptávku.
+
+Pro ověření původu vytvořte náhodný sdílený klíč (nejméně 32 znaků) v bezpečném nastavení hostingu jako `CRM_SHARED_SECRET`; na PC spusťte **Pripojit-web.bat**, ponechte `CRM_WEBHOOK_SECRET` a tentýž klíč vložte do skrytého vstupu. Uloží se do Správce pověření Windows. `.web-settings.json` obsahuje jen identifikátor, ne klíč. Restartujte CRM. Bez klíče lze strukturovaný e-mail importovat, ale jeho původ bude výslovně neověřený. Nesprávný podpis se odmítne. Starší dopisy webu bez metadat umíme rozpoznat podle shodného Reply-To a pole E-mail; také nejsou kryptograficky ověřené.
+
+**Přímé HTTPS CRM:** na hostingu webu navíc nastavte `CRM_ENDPOINT` na skutečnou veřejnou adresu CRM s cestou `/api/inquiries/enepru/` a `CRM_SOURCE_SLUG=enepru`. Hodnotu nepřebírejte z adresy lokálního náhledu. Při nedostupnosti API web zkusí SMTP. Pokud není dostupné ani SMTP, uloží poptávku s přílohami do své SQLite fronty a uživateli pravdivě oznámí přijetí k pozdějšímu doručení (202). Server opakuje přenos, maximálně jednou za hodinu po opakovaných výpadcích. Fronta přežije restart a v administraci webu je vidět její počet. Po potvrzeném doručení se data fronty odstraní. Produkční záloha webu musí zahrnovat jeho SQLite databázi.
+
+Další web dostane vlastní WebsiteSource, `CRM_SOURCE_SLUG` a vlastní klíč. Přímé API nevyžaduje SMTP, ale odpovědi a faktury z CRM ano. Windows lokální CRM nemusí mít otevřený port do internetu.
+
+Podepsaná e-mailová metadata obsahují také seznam jmen příloh a jejich SHA-256. Změněný nebo chybějící soubor se odmítne před vytvořením poptávky.

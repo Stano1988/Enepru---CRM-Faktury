@@ -218,4 +218,9 @@ CRM_IMAP_AUTO_CREATE = (
     )
     == "1"
 )
-CRM_WEBHOOK_SECRET = os.environ.get("CRM_WEBHOOK_SECRET", "")
+from crm.web_profile import load_keys
+
+CRM_WEBSITE_KEYS = load_keys(BASE_DIR)
+CRM_WEBHOOK_SECRET = os.environ.get(
+    "CRM_WEBHOOK_SECRET", CRM_WEBSITE_KEYS.get("CRM_WEBHOOK_SECRET", "")
+)
