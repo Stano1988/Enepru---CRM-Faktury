@@ -4,6 +4,21 @@ Webové CRM v češtině pro Windows a mobilní prohlížeč. Data se ukládají
 
 ![Přehled zakázek na testovacích datech](docs/screenshots/prehled.png)
 
+## Úpravy podle připomínek z 5. listopadu
+
+- **Faktura bez tabulky položek:** volný text „Fakturujeme vám za…“ a jedna celková cena. Z nabídky se cena přenese do zakázky a z ní do faktury. Text a cenu lze upravit i samostatně.
+- **Uložená karta klienta:** poznámky, požadavky, individuální splatnost a přehled opakovaných zakázek a faktur. Klient se znovu nezakládá.
+- **Třídění zakázek:** termín, stav, číslo, klient, cena; filtry služby, období, klienta, pracovníka a archivu.
+- **Kalendář:** vlastní soukromé zápisy bez zakázky; skutečné termíny dokončení se zobrazují přímo z aktuálních zakázek.
+- **Nezávislé agendy:** přímá nabídka bez poptávky, zakázka s klientem založeným na místě, faktura bez zakázky i předchozí karty klienta, samostatně uložené dokumenty s pozdějším přiřazením.
+- **Příjem poptávek:** soubor EML → kliknutí „Vytvořit poptávku“, readonly IMAP se schvalováním či automatickým převodem složky, podepsané API pro Enepru i další weby.
+- **Archiv práce nejméně 5 let:** nezávisí na předchozí fakturaci ani samostatném záznamu předání. Otevřené úkoly je nutné dokončit nebo jejich dokončení výslovně potvrdit při archivaci. Finance lze spravovat i po uzamčení pracovních podkladů.
+- **Ceník není povinný:** není v hlavním menu. Existující data katalogu zůstávají zachovaná; skutečný ceník majitele ještě nebyl dodán.
+
+Přehled klientů a účetní data se ukládají do `db.sqlite3` ve složce aplikace, přílohy do `media/`. Při dalším spuštění zůstávají zachované. Kopie programu do nové prázdné složky sama nepřenese stará data.
+
+[Jak připojit poštu a více webů](docs/INTEGRATIONS.md) · [Jednoduchá faktura](docs/screenshots/faktura.png) · [Kalendář](docs/screenshots/kalendar.png) · [Karta klienta](docs/screenshots/klient.png)
+
 ## Nejjednodušší spuštění na Windows
 
 1. Nainstalujte Python 3.12 nebo novější včetně launcheru `py`.
@@ -29,7 +44,7 @@ Při aktualizaci zachovejte `db.sqlite3`, `media/` a `.local-secret`. Nejprve vy
 - Klientské odkazy pro dodávání podkladů a povolené finální výstupy, s expirací a odvoláním.
 - Úkoly, zaměření se začátkem návštěvy, měsíční kalendář, plánované a skutečné hodiny.
 - Schvalování víceprací se změnou ceny a termínu.
-- Ceník a předvyplnění nabídky či fakturační položky.
+- Nepovinný katalog zůstal technicky zachovaný; běžná fakturace ho nepoužívá.
 - Návrhy faktur ze zakázky i bez zakázky, řada PF, VS a česká QR platba.
 - PDF s českými znaky, uložené údaje odběratele a dodavatele, uzamčení vystaveného dokladu.
 - Zálohové výzvy a odečet jedné uhrazené zálohy do konečné faktury.
@@ -46,7 +61,9 @@ Při aktualizaci zachovejte `db.sqlite3`, `media/` a `.local-secret`. Nejprve vy
 
 **Není to ještě kompletní produkční řešení všech rozšíření.** Přesné hranice jsou v [přehledu funkcí](docs/FEATURES.md). Zejména není připojena skutečná pošta, bankovní API ani veřejný hosting. PDF používá rozvržení inspirované Excelovou předlohou, není její pixelově přesnou kopií. Účetní opravné doklady a další specializované integrace dosud nejsou dokončené.
 
-## První pracovní průchod
+## Příklad propojeného pracovního průchodu
+
+Není povinné začínat poptávkou. Klient, nabídka, zakázka, faktura, kalendář a dokumenty mají vlastní vstupní akce.
 
 1. V Nastavení zkontrolovat dodavatele, účet, rok faktur a další pořadí.
 2. Založit klienta nebo přijmout poptávku přes `/poptavka/`.
@@ -56,7 +73,7 @@ Při aktualizaci zachovejte `db.sqlite3`, `media/` a `.local-secret`. Nejprve vy
 6. Připravit fakturu, zkontrolovat návrh, vystavit, otevřít PDF a potvrdit tisk.
 7. Zprávu s fakturou zkontrolovat v Komunikaci.
 8. Ručně nebo importem zaevidovat úhradu. Plná úhrada se zobrazí zeleně.
-9. Dokončit úkoly, označit finální výstupy, zaznamenat předání a archivovat.
+9. Dokončit práci a archivovat. Záznam předání lze doplnit, není však podmínkou archivace; fakturace a platby jsou samostatné.
 
 ## Číslování
 

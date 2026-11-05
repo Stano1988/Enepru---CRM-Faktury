@@ -1,1 +1,15 @@
-{% extends 'base.html' %}{% block content %}<h1>Návrh faktury</h1><p>Číslo a variabilní symbol se přidělí až při vystavení. Dodavatel není plátce DPH.</p>{% if catalog_items %}<section class="panel"><h2>Předvyplnit položku z ceníku</h2>{% for item in catalog_items %}<p><a href="{% url 'invoice_new' %}?item={{ item.pk }}{% if job_param %}&amp;job={{ job_param }}{% endif %}">{{ item }}</a></p>{% endfor %}</section>{% endif %}<section class="panel"><form method="post">{% csrf_token %}<div class="narrow">{{ form.as_p }}</div><h2>Položky</h2>{{ lines.management_form }}{{ lines.non_form_errors }}<div class="tablewrap"><table><thead><tr><th>Popis</th><th>Množství</th><th>Cena / ks Kč</th><th>Odstranit</th></tr></thead><tbody>{% for line in lines %}<tr><td>{{ line.id }}{{ line.description }}{{ line.description.errors }}{{ line.non_field_errors }}</td><td>{{ line.quantity }}{{ line.quantity.errors }}</td><td>{{ line.unit_price }}{{ line.unit_price.errors }}</td><td>{{ line.DELETE }}</td></tr>{% endfor %}</tbody></table></div><button>Uložit návrh a zobrazit</button></form></section>{% endblock %}
+{% extends 'base.html' %}{% block content %}
+<h1>Faktura</h1><p>Text a cenu můžete upravit. Částka se přebírá z nabídky nebo zakázky; není nutný ceník ani seznam položek.</p>
+<section class="panel"><form method="post" class="simple-invoice">{% csrf_token %}{{ form.non_field_errors }}
+<div class="columns"><div>
+<h2>Za co fakturujeme</h2><p>{{ form.billing_text.label_tag }}{{ form.billing_text }}{{ form.billing_text.errors }}</p>
+<p>{{ form.amount.label_tag }}{{ form.amount }}{{ form.amount.errors }}</p>
+<p>{{ form.issue_date.label_tag }}{{ form.issue_date }}{{ form.issue_date.errors }}</p><p>{{ form.due_date.label_tag }}{{ form.due_date }}{{ form.due_date.errors }}</p>
+<details><summary>Záloha a vazba na zakázku (nepovinné)</summary><p>{{ form.job.label_tag }}{{ form.job }}{{ form.job.errors }}</p><p>{{ form.kind.label_tag }}{{ form.kind }}{{ form.kind.errors }}</p><p>{{ form.advance.label_tag }}{{ form.advance }}{{ form.advance.errors }}</p></details>
+</div><div><h2>Komu fakturujeme</h2><p>{{ form.client.label_tag }}{{ form.client }}{{ form.client.errors }}<small>Vyberte uloženého klienta, nebo ponechte prázdné a doplňte údaje níže. Nový klient se uloží automaticky.</small></p>
+<p>{{ form.recipient_name.label_tag }}{{ form.recipient_name }}{{ form.recipient_name.errors }}</p><p>{{ form.recipient_address.label_tag }}{{ form.recipient_address }}{{ form.recipient_address.errors }}</p>
+<p>{{ form.recipient_email.label_tag }}{{ form.recipient_email }}{{ form.recipient_email.errors }}</p>
+<details><summary>Firemní údaje</summary><p>{{ form.recipient_company_id.label_tag }}{{ form.recipient_company_id }}{{ form.recipient_company_id.errors }}</p><p>{{ form.recipient_tax_id.label_tag }}{{ form.recipient_tax_id }}{{ form.recipient_tax_id.errors }}</p></details>
+<div id="invoice-client-notes" class="notice" {% if not client_notes %}hidden{% endif %}>{{ client_notes|linebreaksbr }}</div>
+</div></div><div class="actions"><button name="intent" value="save">Uložit a zkontrolovat fakturu</button><button name="intent" value="prepare_send">Vystavit a připravit e-mail</button></div>
+</form></section>{% endblock %}

@@ -3,7 +3,7 @@ from builtins import property as computed_property
 from decimal import Decimal
 
 from django.conf import settings
-from django.core.validators import MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models, transaction
 from django.db.models import F
 from django.utils import timezone
@@ -30,6 +30,21 @@ class Client(models.Model):
             ("public", "Obec / organizace"),
             ("partner", "Obchodní partner"),
         ],
+    )
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="created_clients",
+    )
+    notes = models.TextField("Poznámky a požadavky klienta", blank=True)
+    payment_days = models.PositiveIntegerField(
+        "Individuální splatnost (dní)",
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(3650)],
     )
 
     def __str__(self):
@@ -96,6 +111,7 @@ class Job(models.Model):
         default=0,
         validators=[MinValueValidator(0)],
     )
+    billing_text = models.TextField("Text pro fakturu (nepovinné)", blank=True)
     archived_at = models.DateTimeField(null=True, blank=True)
     retain_until = models.DateField("Uchovat do", null=True, blank=True)
     hold = models.BooleanField("Pozastavená skartace", default=False)
@@ -222,7 +238,11 @@ class Company(models.Model):
     invoice_year = models.PositiveIntegerField("Rok číselné řady faktur", default=2027)
     invoice_next = models.PositiveIntegerField("Další pořadí faktury", default=1)
     due_days = models.PositiveIntegerField("Splatnost ve dnech", default=14)
-    retention_years = models.PositiveIntegerField("Doba uchování v letech", default=5)
+    retention_years = models.PositiveIntegerField(
+        "Doba uchování v letech",
+        default=5,
+        validators=[MinValueValidator(5), MaxValueValidator(99)],
+    )
 
     def __str__(self):
         return self.name
@@ -268,6 +288,16 @@ class Inquiry(models.Model):
         ("lost", "Odmítnutá"),
         ("converted", "Převedena na zakázku"),
     ]
+    origin = models.CharField(
+        max_length=20,
+        choices=[("inquiry", "Poptávka"), ("direct_offer", "Přímá nabídka")],
+        default="inquiry",
+    )
+    website = models.ForeignKey(
+        "WebsiteSource", null=True, blank=True, on_delete=models.PROTECT
+    )
+    intake_hash = models.CharField(max_length=64, blank=True)
+    last_reply_at = models.DateTimeField(null=True, blank=True)
     name = models.CharField("Jméno / firma", max_length=200)
     email = models.EmailField()
     phone = models.CharField("Telefon", max_length=40, blank=True)
@@ -344,8 +374,12 @@ def document_path(instance, filename):
 
 
 class Document(JobChild):
-    job = models.ForeignKey(Job, on_delete=models.PROTECT, related_name="documents")
-    folder = models.ForeignKey(Folder, on_delete=models.PROTECT, verbose_name="Složka")
+    job = models.ForeignKey(
+        Job, null=True, blank=True, on_delete=models.PROTECT, related_name="documents"
+    )
+    folder = models.ForeignKey(
+        Folder, null=True, blank=True, on_delete=models.PROTECT, verbose_name="Složka"
+    )
     name = models.CharField("Název", max_length=240)
     file = models.FileField(upload_to=document_path)
     sha256 = models.CharField(max_length=64)
@@ -460,6 +494,13 @@ class Expense(JobChild):
 
 
 class Invoice(models.Model):
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="created_invoices",
+    )
     job = models.ForeignKey(
         Job,
         null=True,
@@ -575,7 +616,7 @@ class Invoice(models.Model):
 
 class InvoiceLine(models.Model):
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="lines")
-    description = models.CharField("Položka", max_length=500)
+    description = models.TextField("Fakturujeme vám za")
     quantity = models.DecimalField(
         "Množství",
         max_digits=9,
@@ -673,6 +714,7 @@ class Message(models.Model):
         related_name="messages",
     )
     offer = models.ForeignKey(Offer, null=True, blank=True, on_delete=models.PROTECT)
+    message_id = models.CharField(max_length=998, null=True, blank=True, unique=True)
     to = models.EmailField("Příjemce")
     subject = models.CharField("Předmět", max_length=250)
     body = models.TextField("Text zprávy")
@@ -797,3 +839,96 @@ class PriceItem(models.Model):
 
     def __str__(self):
         return f"{self.name} — {self.unit_price} Kč"
+
+
+class ClientChange(models.Model):
+    client = models.ForeignKey(Client, on_delete=models.PROTECT, related_name="changes")
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    before = models.JSONField(default=dict)
+    after = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+
+
+class CalendarEntry(models.Model):
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    title = models.CharField("Název zápisu", max_length=250)
+    notes = models.TextField("Poznámky", blank=True)
+    starts_at = models.DateTimeField("Začátek")
+    ends_at = models.DateTimeField("Konec (nepovinné)", null=True, blank=True)
+    job = models.ForeignKey(
+        Job,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        verbose_name="Zakázka (nepovinné)",
+    )
+
+    class Meta:
+        ordering = ["starts_at", "id"]
+
+
+class ReceivedMail(models.Model):
+    fingerprint = models.CharField(max_length=64, unique=True)
+    message_id = models.CharField(max_length=998, blank=True)
+    references = models.JSONField(default=list)
+    sender_name = models.CharField(max_length=200, blank=True)
+    sender_email = models.EmailField()
+    subject = models.CharField(max_length=250)
+    body = models.TextField()
+    sent_at = models.DateTimeField(null=True, blank=True)
+    received_at = models.DateTimeField(auto_now_add=True)
+    source = models.CharField(max_length=100, default="Soubor EML")
+    inquiry = models.ForeignKey(
+        Inquiry,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="received_mail",
+    )
+    skipped_attachments = models.JSONField(default=list)
+
+    class Meta:
+        ordering = ["-received_at", "-id"]
+
+
+class MailAttachment(models.Model):
+    mail = models.ForeignKey(
+        ReceivedMail, on_delete=models.CASCADE, related_name="attachments"
+    )
+    file = models.FileField(upload_to=document_path)
+    name = models.CharField(max_length=240)
+    sha256 = models.CharField(max_length=64)
+
+
+class MailboxCursor(models.Model):
+    key = models.CharField(max_length=64, unique=True)
+    last_uid = models.PositiveBigIntegerField(default=0)
+    checked_at = models.DateTimeField(null=True, blank=True)
+
+
+class MailboxSync(models.Model):
+    checked_at = models.DateTimeField(auto_now_add=True)
+    imported = models.PositiveIntegerField(default=0)
+    error = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        ordering = ["-checked_at", "-id"]
+
+
+class WebsiteSource(models.Model):
+    name = models.CharField("Název webu", max_length=100)
+    slug = models.SlugField("Identifikátor", unique=True)
+    domain = models.CharField("Doména", max_length=250)
+    secret_env = models.CharField(
+        "Název bezpečné proměnné s klíčem",
+        max_length=100,
+        unique=True,
+        default="CRM_WEBHOOK_SECRET",
+    )
+    active = models.BooleanField("Přijímat poptávky", default=True)
+
+    def __str__(self):
+        return self.name

@@ -6,10 +6,10 @@
 {% if user.is_superuser %}<a href="{% url 'inquiries' %}">↗ Poptávky a nabídky</a>{% endif %}
 {% if perms.crm.view_client %}<a href="{% url 'clients' %}">♙ Klienti a kontakty</a>{% endif %}
 {% if perms.crm.view_property %}<a href="{% url 'properties' %}">⌂ Nemovitosti</a>{% endif %}
-{% if perms.crm.view_task %}<a href="{% url 'calendar' %}">▦ Kalendář a úkoly</a>{% endif %}
-<a href="{% url 'archives' %}">Archiv zakázek</a>{% if can_finance %}<a href="{% url 'invoices' %}">Kč Faktury a úhrady</a>{% endif %}
+<a href="{% url 'calendar' %}">▦ Kalendář</a>
+{% if perms.crm.view_document %}<a href="{% url 'documents' %}">Dokumenty</a>{% endif %}<a href="{% url 'archives' %}">Archiv zakázek</a>{% if can_finance %}<a href="{% url 'invoices' %}">Kč Faktury a úhrady</a>{% endif %}
 {% if user.is_superuser %}
-<a href="{% url 'bank_transactions' %}">⇄ Bankovní platby</a><a href="{% url 'outbox' %}">✉ Komunikace</a><a href="{% url 'reports' %}">▥ Reporty</a><a href="{% url 'catalog' %}">Ceník služeb</a><a href="{% url 'settings' %}">⚙ Nastavení firmy</a><a href="{% url 'users' %}">Uživatelé a oprávnění</a><a href="/admin/">Automatizace a skupiny</a>
+<a href="{% url 'bank_transactions' %}">⇄ Bankovní platby</a><a href="{% url 'inbox' %}">✉ Přijatá pošta</a><a href="{% url 'outbox' %}">Odesílané zprávy</a><a href="{% url 'reports' %}">▥ Reporty</a><a href="{% url 'websites' %}">Weby a zdroje poptávek</a><a href="{% url 'settings' %}">⚙ Nastavení firmy</a><a href="{% url 'users' %}">Uživatelé a oprávnění</a><a href="/admin/">Automatizace a skupiny</a>
 {% endif %}<a href="{% url 'profile' %}">Můj profil</a><a href="{% url 'password_change' %}">Změnit heslo</a><a href="{% url 'mfa_setup' %}">Zabezpečení účtu</a>{% endif %}
 </nav><div class="asidefoot">Lahodný CRM · pracovní verze</div></aside>
 <div class="workspace"><header><span>PENB · pasporty · vaše podnikání</span>{% if user.is_authenticated %}<div>{{ user.get_full_name|default:user.username }}<form method="post" action="{% url 'logout' %}" class="inline">{% csrf_token %}<button class="quiet">Odhlásit</button></form></div>{% endif %}</header>

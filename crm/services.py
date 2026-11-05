@@ -99,6 +99,8 @@ def initialize_job(job):
 @transaction.atomic
 def create_offer(inquiry, cleaned, user):
     inquiry = Inquiry.objects.select_for_update().get(pk=inquiry.pk)
+    if not inquiry.address.strip():
+        raise ValidationError("Před nabídkou doplňte adresu nemovitosti v poptávce.")
     if inquiry.job_id or inquiry.status == "accepted":
         raise ValidationError(
             "Potvrzenou nabídku nelze nahradit. Změny řešte jako vícepráci."
@@ -153,13 +155,29 @@ def convert_inquiry(inquiry, user):
     if not offer:
         raise ValidationError("Nejprve musí být potvrzena nabídka.")
     data = offer.acceptance
-    client = inquiry.client or Client.objects.create(
+    client = inquiry.client
+    if not client:
+        candidates = Client.objects.none()
+        if data.get("company_id"):
+            candidates = Client.objects.filter(company_id=data["company_id"])
+        if not candidates.exists():
+            candidates = Client.objects.filter(
+                email__iexact=inquiry.email,
+                name__iexact=data.get("name") or inquiry.name,
+            )
+        if candidates.count() > 1:
+            raise ValidationError(
+                "Existuje více odpovídajících klientů. Vyberte správnou kartu klienta před převodem."
+            )
+        client = candidates.first()
+    client = client or Client.objects.create(
         name=data.get("name") or inquiry.name,
         email=inquiry.email,
         phone=inquiry.phone,
         billing_address=data.get("billing_address", ""),
         company_id=data.get("company_id", ""),
         tax_id=data.get("tax_id", ""),
+        created_by=user,
     )
     job = Job.objects.create(
         title=f"{dict(Job.SERVICES)[inquiry.service]} — {inquiry.address[:120]}",
@@ -286,7 +304,9 @@ def invoice_pdf(invoice):
     supplier_text = f"Dodavatel:\n{supplier['name']}\n{supplier['address']}\nIČO: {supplier['company_id']}\nDodavatel není plátce DPH."
     recipient_text = f"Odběratel:\n{recipient['name']}\n{recipient['address']}\nIČO: {recipient.get('company_id', '')}\nDIČ: {recipient.get('tax_id', '')}"
     parties = Table(
-        [[para(supplier_text), para(recipient_text)]], colWidths=[87 * mm, 87 * mm]
+        [[para(supplier_text), para(recipient_text)]],
+        colWidths=[87 * mm, 87 * mm],
+        splitInRow=1,
     )
     parties.setStyle(
         TableStyle(
@@ -309,28 +329,16 @@ def invoice_pdf(invoice):
     if invoice.job_id:
         story.append(para(f"Zakázka: {invoice.job.number} — {invoice.job.address}"))
     story.append(Spacer(1, 8 * mm))
-    rows = [
-        [
-            para("Označení položky"),
-            para("Množství"),
-            para("Cena / ks"),
-            para("Celkem Kč"),
-        ]
-    ]
+    rows = [[para("Fakturujeme vám za"), para("Cena celkem Kč")]]
     for line in invoice.lines.all():
-        rows.append(
-            [
-                para(line.description),
-                para(line.quantity),
-                para(f"{line.unit_price:.2f}"),
-                para(f"{line.total:.2f}"),
-            ]
+        description = (
+            line.description
+            if line.quantity == 1
+            else f"{line.description} ({line.quantity}×)"
         )
+        rows.append([para(description), para(f"{line.total:.2f}")])
     table = Table(
-        rows,
-        colWidths=[91 * mm, 22 * mm, 28 * mm, 33 * mm],
-        repeatRows=1,
-        hAlign="LEFT",
+        rows, colWidths=[139 * mm, 35 * mm], repeatRows=1, hAlign="LEFT", splitInRow=1
     )
     table.setStyle(
         TableStyle(
@@ -375,8 +383,6 @@ def issue_invoice(invoice, user):
     )
     if invoice.issued_at:
         return invoice
-    if invoice.job:
-        editable(invoice.job)
     for line in invoice.lines.all():
         line.full_clean()
     if invoice.subtotal <= 0:
@@ -483,8 +489,6 @@ def record_payment(invoice, data, user):
         or amount.as_tuple().exponent < -2
     ):
         raise ValidationError("Neplatná částka platby.")
-    if invoice.job:
-        editable(invoice.job)
     existing = Payment.objects.filter(request_key=data["request_key"]).first()
     if existing:
         if (
@@ -560,10 +564,20 @@ def send_message(message, user=None):
             raise ValidationError(
                 "Odesílání není připojené. Nastavte bezpečně SMTP a CRM_EMAIL_ENABLED=1."
             )
+        if not message.message_id:
+            from email.utils import make_msgid
+
+            message.message_id = make_msgid(
+                domain=settings.DEFAULT_FROM_EMAIL.split("@")[-1]
+            )
         message.state = "sending"
-        message.save(update_fields=["state", "body"])
+        message.save(update_fields=["state", "body", "message_id"])
     mail = EmailMessage(
-        message.subject, message.body, settings.DEFAULT_FROM_EMAIL, [message.to]
+        message.subject,
+        message.body,
+        settings.DEFAULT_FROM_EMAIL,
+        [message.to],
+        headers={"Message-ID": message.message_id},
     )
     if message.invoice:
         mail.attach(
@@ -652,20 +666,27 @@ def reminder_body(invoice):
 
 
 @transaction.atomic
-def archive_job(job, user):
+def archive_job(job, user, confirm_complete=False):
     job = Job.objects.select_for_update().get(pk=job.pk)
     if job.archived_at:
         return job
     if job.status not in ["delivered", "closed"]:
         raise ValidationError("Nejprve zaznamenejte předání a dokončení práce.")
-    if not job.handovers.exists():
-        raise ValidationError("Chybí záznam předání.")
-    if job.tasks.filter(done=False).exists():
-        raise ValidationError("Nejprve dokončete otevřené úkoly.")
-    if any(not inv.issued_at or inv.balance > 0 for inv in job.invoices.all()):
-        raise ValidationError("Nejprve dokončete a vypořádejte doklady.")
+    unfinished = list(job.tasks.filter(done=False).values_list("id", flat=True))
+    if unfinished and not confirm_complete:
+        raise ValidationError(
+            "Dokončete otevřené úkoly nebo při archivaci potvrďte jejich uzavření."
+        )
+    if unfinished:
+        job.tasks.filter(pk__in=unfinished).update(done=True)
+        event(
+            user,
+            "Při archivaci potvrzeno dokončení otevřených úkolů",
+            job,
+            tasks=unfinished,
+        )
     now = timezone.now()
-    year = now.year + company().retention_years
+    year = now.year + max(5, company().retention_years)
     try:
         until = now.date().replace(year=year)
     except ValueError:
@@ -776,6 +797,23 @@ def archive_zip(job):
             )
         for inv in job.invoices.filter(issued_at__isnull=False):
             z.writestr(f"faktury/{inv.number.replace(' ', '-')}.pdf", bytes(inv.pdf))
+        financial = {
+            "exported_at": str(timezone.now()),
+            "note": "Aktuální finance jsou samostatné od uzamčeného pracovního archivu.",
+            "invoices": [
+                {
+                    "number": inv.number,
+                    "total": str(inv.total),
+                    "paid": str(inv.paid),
+                    "balance": str(inv.balance),
+                    "state": inv.state,
+                }
+                for inv in job.invoices.filter(issued_at__isnull=False)
+            ],
+        }
+        z.writestr(
+            "finance-current.json", json.dumps(financial, ensure_ascii=False, indent=2)
+        )
         z.writestr(
             "manifest.json",
             json.dumps(manifest, ensure_ascii=False, indent=2, default=str),
@@ -809,6 +847,13 @@ def accept_extra(extra):
 
 
 def run_daily():
+    if settings.CRM_IMAP_ENABLED:
+        from .mailbox import sync_mailbox
+
+        try:
+            sync_mailbox()
+        except ValidationError:
+            pass
     from .models import Notification
 
     today = timezone.localdate()
@@ -847,8 +892,6 @@ def run_daily():
 def void_payment(payment, user, reason):
     require_finance(user)
     invoice = Invoice.objects.select_for_update().get(pk=payment.invoice_id)
-    if invoice.job:
-        editable(invoice.job)
     payment = Payment.objects.select_for_update().get(pk=payment.pk)
     if payment.voided_at:
         return
@@ -874,3 +917,68 @@ def void_payment(payment, user, reason):
         payment=payment.pk,
         reason=reason,
     )
+
+
+def matching_client(name, email="", company_id="", actor=None):
+    candidates = (
+        Client.objects.filter(company_id=company_id)
+        if company_id
+        else Client.objects.none()
+    )
+    if not candidates.exists() and email:
+        candidates = Client.objects.filter(email__iexact=email, name__iexact=name)
+    if candidates.count() > 1:
+        raise ValidationError(
+            "Existuje více odpovídajících klientů. Vyberte správnou uloženou kartu."
+        )
+    client = candidates.first()
+    if (
+        client
+        and actor
+        and not actor.is_superuser
+        and not clients_for(actor).filter(pk=client.pk).exists()
+    ):
+        raise ValidationError(
+            "Odpovídající karta klienta není v rozsahu vašich oprávnění. Požádejte správce o přidělení."
+        )
+    return client
+
+
+@transaction.atomic
+def resolve_client(
+    name, email="", phone="", address="", company_id="", tax_id="", actor=None
+):
+    return matching_client(name, email, company_id, actor) or Client.objects.create(
+        name=name,
+        email=email,
+        phone=phone,
+        billing_address=address,
+        company_id=company_id,
+        tax_id=tax_id,
+        created_by=actor,
+    )
+
+
+def documents_for(user):
+    qs = Document.objects.all()
+    if user.is_superuser:
+        return qs
+    base = (
+        Q(job__in=jobs_for(user))
+        | Q(job__isnull=True, uploaded_by=user)
+        | Q(job__isnull=True, allowed_users=user)
+    )
+    visible = (
+        Q(internal=False)
+        | Q(allowed_users=user)
+        | Q(job__isnull=True, uploaded_by=user)
+    )
+    return qs.filter(base & visible).distinct()
+
+
+def clients_for(user):
+    if user.is_superuser:
+        return Client.objects.all()
+    return Client.objects.filter(
+        Q(job__in=jobs_for(user)) | Q(created_by=user)
+    ).distinct()

@@ -22,7 +22,9 @@ from django.views.decorators.http import require_POST
 from . import forms as f
 from .models import (
     BankTransaction,
+    CalendarEntry,
     Client,
+    ClientChange,
     ClientLink,
     Document,
     Expense,
@@ -31,6 +33,7 @@ from .models import (
     Inquiry,
     InquiryAttachment,
     Invoice,
+    InvoiceLine,
     Job,
     Message,
     Notification,
@@ -45,9 +48,11 @@ from .services import (
     accept_offer,
     archive_job,
     archive_zip,
+    clients_for,
     company,
     convert_inquiry,
     create_offer,
+    documents_for,
     ensure_folders,
     event,
     export_allowed,
@@ -91,10 +96,19 @@ def report_error(request, error):
 def client_edit(request, pk):
     manager(request.user)
     obj = get_object_or_404(Client, pk=pk)
+    from django.forms.models import model_to_dict
+
+    before = {k: str(v) for k, v in model_to_dict(obj).items()}
     form = f.ClientForm(request.POST or None, instance=obj)
     if request.method == "POST" and form.is_valid():
-        form.save()
-        event(request.user, "Upraven klient", client=obj.pk)
+        with transaction.atomic():
+            form.save()
+            after = {k: str(v) for k, v in model_to_dict(obj).items()}
+            if before != after:
+                ClientChange.objects.create(
+                    client=obj, author=request.user, before=before, after=after
+                )
+            event(request.user, "Upraven klient", client=obj.pk)
         return redirect("clients")
     return form_page(request, form, "Upravit klienta")
 
@@ -104,7 +118,10 @@ def client_edit(request, pk):
 def properties(request):
     qs = Property.objects.select_related("client")
     if not request.user.is_superuser:
-        qs = qs.filter(job__in=jobs_for(request.user)).distinct()
+        qs = qs.filter(
+            Q(job__in=jobs_for(request.user))
+            | Q(job__isnull=True, created_by=request.user)
+        ).distinct()
     return render(request, "crm/properties.html", {"properties": qs})
 
 
@@ -361,15 +378,15 @@ def document_new(request, pk):
 @permission_required("crm.view_document", raise_exception=True)
 def document_download(request, pk):
     doc = get_object_or_404(
-        Document.objects.select_related("job"),
+        documents_for(request.user).select_related("job"),
         pk=pk,
-        job__in=jobs_for(request.user),
         deleted_at__isnull=True,
     )
     if (
         doc.internal
         and not request.user.is_superuser
         and not doc.allowed_users.filter(pk=request.user.pk).exists()
+        and not (doc.job_id is None and doc.uploaded_by_id == request.user.pk)
     ):
         raise PermissionDenied
     event(request.user, "Stažen dokument", doc.job, document=doc.pk)
@@ -385,12 +402,14 @@ def document_download(request, pk):
 @permission_required("crm.change_document", raise_exception=True)
 @require_POST
 def document_action(request, pk):
-    doc = get_object_or_404(Document, pk=pk, job__in=jobs_for(request.user))
-    ensure_mutable(doc.job)
+    doc = get_object_or_404(documents_for(request.user), pk=pk)
+    if doc.job:
+        ensure_mutable(doc.job)
     if (
         doc.internal
         and not request.user.is_superuser
         and not doc.allowed_users.filter(pk=request.user.pk).exists()
+        and not (doc.job_id is None and doc.uploaded_by_id == request.user.pk)
     ):
         raise PermissionDenied
     action = request.POST.get("action")
@@ -409,7 +428,9 @@ def document_action(request, pk):
         return HttpResponseBadRequest("Neznámá akce.")
     doc.save()
     event(request.user, "Změna dokumentu", doc.job, document=doc.pk, action_type=action)
-    return redirect("job_detail", pk=doc.job_id)
+    return (
+        redirect("job_detail", pk=doc.job_id) if doc.job_id else redirect("documents")
+    )
 
 
 @login_required
@@ -517,7 +538,6 @@ def expense_new(request, pk):
 
 
 @login_required
-@permission_required("crm.view_task", raise_exception=True)
 def calendar(request):
     import calendar as month_calendar
     from datetime import date
@@ -537,6 +557,15 @@ def calendar(request):
         .select_related("job", "assigned_to")
         .order_by("due_date", "id")
     )
+    visible_jobs = (
+        jobs_for(request.user)
+        if request.user.has_perm("crm.view_job")
+        else Job.objects.none()
+    )
+    if not request.user.has_perm("crm.view_task"):
+        tasks = Task.objects.none()
+    entries = CalendarEntry.objects.filter(owner=request.user).order_by("starts_at")
+    entries = entries.filter(Q(job__isnull=True) | Q(job__in=visible_jobs))
     buckets = {}
     for task in tasks:
         day = (
@@ -545,11 +574,23 @@ def calendar(request):
             else task.due_date
         )
         buckets.setdefault(day, []).append(task)
+    deadline_buckets = {}
+    for job in visible_jobs.filter(archived_at__isnull=True).exclude(
+        status__in=["closed", "delivered"]
+    ):
+        deadline_buckets.setdefault(job.due_date, []).append(job)
+    note_buckets = {}
+    for entry in entries:
+        note_buckets.setdefault(timezone.localtime(entry.starts_at).date(), []).append(
+            entry
+        )
     weeks = [
         [
             {
                 "date": day,
                 "tasks": buckets.get(day, []),
+                "deadlines": deadline_buckets.get(day, []),
+                "entries": note_buckets.get(day, []),
                 "outside": day.month != selected.month,
                 "today": day == today,
             }
@@ -562,7 +603,12 @@ def calendar(request):
     return render(
         request,
         "crm/calendar.html",
-        {"tasks": tasks, "weeks": weeks, "month": selected.strftime("%Y-%m")},
+        {
+            "tasks": tasks,
+            "entries": entries,
+            "weeks": weeks,
+            "month": selected.strftime("%Y-%m"),
+        },
     )
 
 
@@ -582,7 +628,7 @@ def invoice_for(user, pk):
     require_finance(user)
     qs = Invoice.objects.select_related("client", "job")
     if not user.is_superuser:
-        qs = qs.filter(job__in=jobs_for(user))
+        qs = qs.filter(Q(job__in=jobs_for(user)) | Q(job__isnull=True, created_by=user))
     return get_object_or_404(qs, pk=pk)
 
 
@@ -593,15 +639,15 @@ def invoice_form(request, pk=None):
     obj = invoice_for(request.user, pk) if pk else Invoice()
     if obj.issued_at:
         raise PermissionDenied("Vystavený doklad nelze přepsat.")
-    initial = {}
-    job = None
     if not pk and request.GET.get("job"):
         job = get_object_or_404(jobs_for(request.user), pk=request.GET["job"])
-        ensure_mutable(job)
         obj.job = job
         obj.client = job.client
-    if obj.job_id:
-        ensure_mutable(obj.job)
+    elif not pk and request.GET.get("client"):
+        obj.client = get_object_or_404(
+            clients_for(request.user), pk=request.GET["client"]
+        )
+    initial = {}
     if obj.client_id:
         c = obj.client
         r = obj.recipient or (obj.job.billing_details if obj.job_id else {})
@@ -613,65 +659,135 @@ def invoice_form(request, pk=None):
             recipient_tax_id=r.get("tax_id", c.tax_id),
         )
     cfg = company()
-    if not pk:
-        from datetime import date
+    from datetime import date
 
+    if not pk:
         initial["issue_date"] = max(timezone.localdate(), date(cfg.invoice_year, 1, 1))
+    days = (obj.client.payment_days if obj.client_id else None) or cfg.due_days
     initial["due_date"] = obj.due_date or initial.get(
         "issue_date", obj.issue_date
-    ) + timedelta(days=cfg.due_days)
-    form = f.InvoiceForm(request.POST or None, instance=obj, initial=initial)
+    ) + timedelta(days=days)
+    if pk:
+        initial["billing_text"] = "\n".join(
+            (
+                line.description
+                if line.quantity == 1
+                else f"{line.description} ({line.quantity}×)"
+            )
+            for line in obj.lines.all()
+        )
+        initial["amount"] = obj.subtotal
+    elif obj.job_id:
+        default = {
+            "penb": "vyhotovení průkazu energetické náročnosti budovy (PENB)",
+            "passport": "vyhotovení pasportu stavby",
+            "both": "vyhotovení PENB a pasportu stavby",
+            "other": "provedené služby",
+        }[obj.job.service]
+        initial["billing_text"] = (
+            obj.job.billing_text
+            or f"Fakturujeme vám za {default}.\nNemovitost: {obj.job.address}"
+        )
+        initial["amount"] = obj.job.agreed_price
+    else:
+        initial["billing_text"] = "Fakturujeme vám za "
+    form = f.SimpleInvoiceForm(request.POST or None, instance=obj, initial=initial)
+    form.actor = request.user
     if not request.user.is_superuser:
         form.fields["job"].queryset = jobs_for(request.user)
-        form.fields["client"].queryset = Client.objects.filter(
-            job__in=jobs_for(request.user)
-        ).distinct()
+        form.fields["client"].queryset = clients_for(request.user)
     advances = Invoice.objects.filter(kind="advance", issued_at__isnull=False)
     if not request.user.is_superuser:
         advances = advances.filter(job__in=jobs_for(request.user))
     if obj.pk:
         advances = advances.exclude(pk=obj.pk)
     form.fields["advance"].queryset = advances
-    line_initial = (
-        [
-            {
-                "description": f"{obj.job.get_service_display()} — {obj.job.address}",
-                "quantity": 1,
-                "unit_price": obj.job.agreed_price,
-            }
-        ]
-        if obj.job_id and not pk
-        else []
-    )
-    if not pk and request.GET.get("item"):
-        item = get_object_or_404(PriceItem, pk=request.GET["item"], active=True)
-        line_initial = [
-            {"description": item.name, "quantity": 1, "unit_price": item.unit_price}
-        ]
-    lines = f.LineFormSet(
-        request.POST or None,
-        instance=obj,
-        initial=line_initial if request.method != "POST" else None,
-    )
-    if request.method == "POST" and form.is_valid() and lines.is_valid():
-        if form.cleaned_data.get("job"):
-            ensure_mutable(form.cleaned_data["job"])
-        with transaction.atomic():
-            obj = form.save()
-            lines.instance = obj
-            lines.save()
-            event(request.user, "Uložen návrh faktury", obj.job, invoice=obj.pk)
+    if request.method == "POST" and form.is_valid():
+        if request.POST.get("intent") == "prepare_send" and not form.cleaned_data.get(
+            "recipient_email"
+        ):
+            form.add_error(
+                "recipient_email",
+                "Pro odeslání doplňte e-mail. Fakturu bez e-mailu můžete uložit a vytisknout.",
+            )
+            return render(
+                request, "crm/invoice_form.html", {"form": form, "invoice": obj}
+            )
+        if not form.cleaned_data.get("client") and not request.user.has_perm(
+            "crm.add_client"
+        ):
+            form.add_error(
+                "client", "Nemáte oprávnění založit nového klienta. Vyberte uloženého."
+            )
+            return render(
+                request, "crm/invoice_form.html", {"form": form, "invoice": obj}
+            )
+        try:
+            with transaction.atomic():
+                if pk:
+                    locked = Invoice.objects.select_for_update().get(pk=pk)
+                    if locked.issued_at:
+                        raise PermissionDenied("Doklad byl mezitím vystaven.")
+                old_lines = (
+                    list(obj.lines.values("description", "quantity", "unit_price"))
+                    if obj.pk
+                    else []
+                )
+                obj = form.save(commit=False)
+                if not pk:
+                    obj.created_by = request.user
+                obj.save()
+                obj.lines.all().delete()
+                InvoiceLine.objects.create(
+                    invoice=obj,
+                    description=form.cleaned_data["billing_text"],
+                    quantity=1,
+                    unit_price=form.cleaned_data["amount"],
+                )
+                event(
+                    request.user,
+                    "Uložen jednoduchý návrh faktury",
+                    obj.job,
+                    invoice=obj.pk,
+                    previous_lines=[
+                        {k: str(v) for k, v in line.items()} for line in old_lines
+                    ],
+                )
+        except ValidationError as error:
+            form.add_error(None, error)
+            return render(
+                request, "crm/invoice_form.html", {"form": form, "invoice": obj}
+            )
+        if request.POST.get("intent") == "prepare_send":
+            try:
+                obj = issue_invoice(obj, request.user)
+                return redirect("message_edit", pk=prepare_invoice_message(obj).pk)
+            except ValidationError as error:
+                report_error(request, error)
         return redirect("invoice_detail", pk=obj.pk)
     return render(
         request,
         "crm/invoice_form.html",
         {
             "form": form,
-            "lines": lines,
-            "title": "Návrh faktury",
-            "catalog_items": PriceItem.objects.filter(active=True),
-            "job_param": obj.job_id or "",
+            "invoice": obj,
+            "title": "Faktura",
+            "client_notes": obj.client.notes if obj.client_id else "",
         },
+    )
+
+
+def prepare_invoice_message(invoice):
+    if not (invoice.recipient.get("email") or invoice.client.email):
+        raise ValidationError(
+            "Doplňte e-mail příjemce pro odeslání. PDF lze vytisknout i bez něj."
+        )
+    return Message.objects.create(
+        invoice=invoice,
+        job=invoice.job,
+        to=invoice.recipient.get("email") or invoice.client.email,
+        subject=f"Faktura {invoice.number}",
+        body=f"Dobrý den,\n\nv příloze zasíláme fakturu {invoice.number} na částku {invoice.total:.2f} Kč. Splatnost {invoice.due_date:%d.%m.%Y}, variabilní symbol {invoice.variable_symbol}.\n\nDěkujeme.\nIng. Stanislav Lahodný",
     )
 
 
@@ -687,8 +803,6 @@ def invoice_detail(request, pk):
 @require_POST
 def invoice_action(request, pk):
     obj = invoice_for(request.user, pk)
-    if obj.job:
-        ensure_mutable(obj.job)
     action = request.POST.get("action")
     try:
         if action == "issue":
@@ -705,13 +819,7 @@ def invoice_action(request, pk):
         elif action == "message":
             if not obj.issued_at:
                 raise ValidationError("Nejprve vystavte fakturu.")
-            msg = Message.objects.create(
-                invoice=obj,
-                job=obj.job,
-                to=obj.recipient.get("email") or obj.client.email,
-                subject=f"Faktura {obj.number}",
-                body=f"Dobrý den,\n\nv příloze zasíláme {obj.number} na částku {obj.total:.2f} Kč. Splatnost {obj.due_date:%d.%m.%Y}, variabilní symbol {obj.variable_symbol}.\n\nDěkujeme.\nIng. Stanislav Lahodný",
-            )
+            msg = prepare_invoice_message(obj)
             return redirect("message_edit", pk=msg.pk)
         else:
             return HttpResponseBadRequest()
@@ -854,7 +962,11 @@ def archive(request, pk):
     manager(request.user)
     job = get_object_or_404(Job, pk=pk)
     try:
-        archive_job(job, request.user)
+        archive_job(
+            job,
+            request.user,
+            confirm_complete=request.POST.get("complete_tasks") == "on",
+        )
         messages.success(
             request,
             "Zakázka archivována. Doba uchování je nastavitelná; právní lhůty ověřte podle dokumentace.",
@@ -902,7 +1014,7 @@ def reports(request):
     inv = Invoice.objects.filter(issued_at__isnull=False)
     payments = Payment.objects.filter(voided_at__isnull=True)
     expenses = Expense.objects.all()
-    inq = Inquiry.objects.all()
+    inq = Inquiry.objects.filter(origin="inquiry")
     if form.is_valid():
         for key, lookup in [("start", "gte"), ("end", "lte")]:
             d = form.cleaned_data.get(key)
@@ -1388,12 +1500,14 @@ def extra_accept(request, token):
 def document_edit(request, pk):
     from django import forms
 
-    doc = get_object_or_404(Document, pk=pk, job__in=jobs_for(request.user))
-    ensure_mutable(doc.job)
+    doc = get_object_or_404(documents_for(request.user), pk=pk)
+    if doc.job:
+        ensure_mutable(doc.job)
     if (
         doc.internal
         and not request.user.is_superuser
         and not doc.allowed_users.filter(pk=request.user.pk).exists()
+        and not (doc.job_id is None and doc.uploaded_by_id == request.user.pk)
     ):
         raise PermissionDenied
 
@@ -1403,14 +1517,20 @@ def document_edit(request, pk):
             fields = ["name", "folder", "final", "internal", "allowed_users"]
 
     form = EditForm(request.POST or None, instance=doc)
-    form.fields["folder"].queryset = doc.job.folders.all()
+    form.fields["folder"].queryset = (
+        doc.job.folders.all() if doc.job_id else Folder.objects.none()
+    )
     if not request.user.is_superuser:
         form.fields.pop("internal")
         form.fields.pop("allowed_users", None)
     if request.method == "POST" and form.is_valid():
         form.save()
         event(request.user, "Upravena metadata dokumentu", doc.job, document=doc.pk)
-        return redirect("job_detail", pk=doc.job_id)
+        return (
+            redirect("job_detail", pk=doc.job_id)
+            if doc.job_id
+            else redirect("documents")
+        )
     return form_page(request, form, "Název, složka a vlastnosti dokumentu")
 
 

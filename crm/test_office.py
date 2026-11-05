@@ -336,7 +336,7 @@ class OfficeTests(TestCase):
         self.job.assigned_to = self.worker
         self.job.save()
         self.assertEqual(
-            self.client.get(f"/documents/{doc.pk}/download/").status_code, 403
+            self.client.get(f"/documents/{doc.pk}/download/").status_code, 404
         )
         response = self.client.get(f"/jobs/{self.job.pk}/")
         self.assertNotContains(response, "Půdorys.pdf")
@@ -401,6 +401,8 @@ class OfficeTests(TestCase):
             "lines-0-description": "PENB",
             "lines-0-quantity": "1",
             "lines-0-unit_price": "12300",
+            "billing_text": "Fakturujeme vám za vyhotovení PENB",
+            "amount": "12300",
         }
         res = self.client.post("/invoices/new/", data)
         self.assertEqual(res.status_code, 302)
@@ -665,7 +667,7 @@ class OfficeTests(TestCase):
         )
         self.client.force_login(self.worker)
         self.assertEqual(
-            self.client.get(f"/documents/{doc.pk}/download/").status_code, 403
+            self.client.get(f"/documents/{doc.pk}/download/").status_code, 404
         )
         doc.allowed_users.add(self.worker)
         self.assertEqual(
@@ -718,7 +720,6 @@ class OfficeTests(TestCase):
         url = f"/invoices/new/?job={self.job.pk}"
         page = self.client.get(url)
         form = page.context["form"]
-        lines = page.context["lines"]
         data = {}
         for name, field in form.fields.items():
             value = form[name].value()
@@ -727,14 +728,6 @@ class OfficeTests(TestCase):
         for name in ["issue_date", "due_date"]:
             value = form[name].value()
             data[name] = value.isoformat() if hasattr(value, "isoformat") else value
-        for name in ["TOTAL_FORMS", "INITIAL_FORMS", "MIN_NUM_FORMS", "MAX_NUM_FORMS"]:
-            data["lines-" + name] = str(lines.management_form[name].value())
-        for index, line in enumerate(lines.forms):
-            for name in line.fields:
-                value = line[name].value()
-                if name == "DELETE":
-                    continue
-                data[f"lines-{index}-{name}"] = "" if value is None else str(value)
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 302)
         self.assertEqual(Invoice.objects.get().total, self.job.agreed_price)

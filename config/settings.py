@@ -16,6 +16,10 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+from crm.mail_profile import load_profile
+
+MAIL_PROFILE = load_profile(BASE_DIR)
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -165,17 +169,53 @@ AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = 1
 AXES_RESET_ON_SUCCESS = True
 AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]
-CRM_EMAIL_ENABLED = os.environ.get("CRM_EMAIL_ENABLED", "0") == "1"
+CRM_EMAIL_ENABLED = (
+    os.environ.get("CRM_EMAIL_ENABLED", "1" if MAIL_PROFILE.get("enabled") else "0")
+    == "1"
+)
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = os.environ.get("CRM_SMTP_HOST", "")
-EMAIL_PORT = int(os.environ.get("CRM_SMTP_PORT", "587"))
-EMAIL_HOST_USER = os.environ.get("CRM_SMTP_USER", "")
-EMAIL_HOST_PASSWORD = os.environ.get("CRM_SMTP_PASSWORD", "")
-EMAIL_USE_TLS = os.environ.get("CRM_SMTP_TLS", "1") == "1"
-EMAIL_USE_SSL = os.environ.get("CRM_SMTP_SSL", "0") == "1"
+EMAIL_HOST = os.environ.get("CRM_SMTP_HOST", MAIL_PROFILE.get("smtp_host", ""))
+EMAIL_PORT = int(
+    os.environ.get("CRM_SMTP_PORT", str(MAIL_PROFILE.get("smtp_port", 587)))
+)
+EMAIL_HOST_USER = os.environ.get("CRM_SMTP_USER", MAIL_PROFILE.get("username", ""))
+EMAIL_HOST_PASSWORD = os.environ.get(
+    "CRM_SMTP_PASSWORD", MAIL_PROFILE.get("password", "")
+)
+EMAIL_USE_TLS = (
+    os.environ.get("CRM_SMTP_TLS", "1" if MAIL_PROFILE.get("smtp_tls", True) else "0")
+    == "1"
+)
+EMAIL_USE_SSL = (
+    os.environ.get("CRM_SMTP_SSL", "1" if MAIL_PROFILE.get("smtp_ssl") else "0") == "1"
+)
 EMAIL_TIMEOUT = 20
-DEFAULT_FROM_EMAIL = os.environ.get("CRM_FROM_EMAIL", "penb.lahodny@seznam.cz")
+DEFAULT_FROM_EMAIL = os.environ.get(
+    "CRM_FROM_EMAIL", MAIL_PROFILE.get("username", "penb.lahodny@seznam.cz")
+)
 SESSION_COOKIE_AGE = 8 * 60 * 60
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 OTP_TOTP_ISSUER = "Lahodný CRM"
+
+# Incoming email is separate from SMTP. Credentials never go into the database.
+CRM_IMAP_ENABLED = (
+    os.environ.get("CRM_IMAP_ENABLED", "1" if MAIL_PROFILE.get("enabled") else "0")
+    == "1"
+)
+CRM_IMAP_HOST = os.environ.get("CRM_IMAP_HOST", MAIL_PROFILE.get("imap_host", ""))
+CRM_IMAP_PORT = int(
+    os.environ.get("CRM_IMAP_PORT", str(MAIL_PROFILE.get("imap_port", 993)))
+)
+CRM_IMAP_USER = os.environ.get("CRM_IMAP_USER", MAIL_PROFILE.get("username", ""))
+CRM_IMAP_PASSWORD = os.environ.get(
+    "CRM_IMAP_PASSWORD", MAIL_PROFILE.get("password", "")
+)
+CRM_IMAP_FOLDER = os.environ.get("CRM_IMAP_FOLDER", MAIL_PROFILE.get("folder", "INBOX"))
+CRM_IMAP_AUTO_CREATE = (
+    os.environ.get(
+        "CRM_IMAP_AUTO_CREATE", "1" if MAIL_PROFILE.get("auto_create") else "0"
+    )
+    == "1"
+)
+CRM_WEBHOOK_SECRET = os.environ.get("CRM_WEBHOOK_SECRET", "")

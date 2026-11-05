@@ -10,6 +10,9 @@ Přesměrování úložišť: `CRM_DB_PATH`, `CRM_MEDIA_ROOT`. Pro produkci doda
 
 ## E-mail
 
+Pro Windows je k dispozici `Pripojit-postu.bat` a systémový Správce pověření. Podrobnosti jsou v [INTEGRATIONS.md](INTEGRATIONS.md). Soubor `.mail-settings.json` neobsahuje heslo a není součástí Git ani běžné datové zálohy. Na jiném PC je potřeba poštu znovu připojit. Proměnné prostředí mají před lokálním profilem přednost.
+
+
 Bez připojení SMTP lze zprávy připravovat a kontrolovat; nikdy se neoznačí jako skutečně odeslané.
 
 Konfigurace pomocí proměnných cílového prostředí:
@@ -67,3 +70,7 @@ Před velkou zálohou zastavit nahrávání souborů; pro velký produkční pro
 Aplikace zatím není veřejně nasazená. Použít HTTPS, explicitní `CRM_ALLOWED_HOSTS`, bezpečný klíč, `CRM_HTTPS=1`, ověřenou proxy konfiguraci, oddělené zálohy a monitoring. Vývojový server nezveřejňovat. Pro větší zátěž připravit PostgreSQL migraci a její testy; aktuální běhová konfigurace používá SQLite s IMMEDIATE transakcemi.
 
 Zapnout MFA správci, ověřit role na reálném scénáři, otestovat obnovu a skutečné SMTP. Právně ověřit faktury, zásady zpracování osobních údajů a doby uchování. Případné vystavení údajů přes ARES potřebuje povolený HTTPS přístup na ares.gov.cz.
+
+## Nezávislé agendy a archiv
+
+Pracovní archiv je oddělený od financí. Po archivaci lze vystavovat faktury a zaznamenávat platby; nelze přepisovat uzamčené pracovní dokumenty. Export obsahuje původní manifest práce a samostatný `finance-current.json` s aktuálním stavem financí. Záznam předání ani uhrazená faktura nejsou předpokladem archivace. Minimální doba uchování v aplikaci je 5 let; delší právní lhůty je nutné ověřit podle dokumentu.

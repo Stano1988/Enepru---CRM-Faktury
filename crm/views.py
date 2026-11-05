@@ -6,42 +6,73 @@ from django.forms.models import model_to_dict
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from .forms import ClientForm, JobForm, NoteForm
-from .models import Change, Client, Job, Note
-from .services import finance, initialize_job, jobs_for
+from .forms import ClientForm, JobFilterForm, JobForm, NoteForm
+from .models import Change, Client, Note
+from .services import clients_for, finance, initialize_job, jobs_for
 
 
 @login_required
 @permission_required("crm.view_job", raise_exception=True)
 def dashboard(request):
     qs = jobs_for(request.user)
-    active = qs.exclude(status__in=["closed", "delivered"])
-    query = request.GET.get("q", "").strip()
+    active = qs.filter(archived_at__isnull=True).exclude(
+        status__in=["closed", "delivered"]
+    )
+    form = JobFilterForm(request.GET)
+    form.fields["client"].queryset = Client.objects.filter(job__in=qs).distinct()
+    from django.contrib.auth import get_user_model
+
+    form.fields["assigned_to"].queryset = get_user_model().objects.filter(
+        pk__in=qs.values("assigned_to_id")
+    )
+    if not finance(request.user):
+        form.fields["sort"].choices = [
+            (k, v) for k, v in form.fields["sort"].choices if "agreed_price" not in k
+        ]
     jobs = qs
-    if query:
-        jobs = jobs.filter(
-            Q(number__icontains=query)
-            | Q(title__icontains=query)
-            | Q(address__icontains=query)
-            | Q(client__name__icontains=query)
-        )
-    state = request.GET.get("status", "")
-    if state:
-        jobs = jobs.filter(status=state)
+    data = {}
+    if form.is_valid():
+        data = form.cleaned_data
+        q = data.get("q")
+        if q:
+            jobs = jobs.filter(
+                Q(number__icontains=q)
+                | Q(title__icontains=q)
+                | Q(address__icontains=q)
+                | Q(client__name__icontains=q)
+            )
+        for key in ["status", "service", "client", "assigned_to"]:
+            if data.get(key):
+                jobs = jobs.filter(**{key: data[key]})
+        if data.get("due_from"):
+            jobs = jobs.filter(due_date__gte=data["due_from"])
+        if data.get("due_to"):
+            jobs = jobs.filter(due_date__lte=data["due_to"])
+        if data.get("archive") == "only":
+            jobs = jobs.filter(archived_at__isnull=False)
+        elif data.get("archive") != "all":
+            jobs = jobs.filter(archived_at__isnull=True)
+        jobs = jobs.order_by(data.get("sort") or "due_date", "pk")
+    else:
+        jobs = jobs.none()
+    links = {}
+    for column in ["due_date", "status", "number", "client__name"]:
+        query = request.GET.copy()
+        query["sort"] = "-" + column if data.get("sort") == column else column
+        links[column] = query.urlencode()
     return render(
         request,
         "crm/dashboard.html",
         {
             "jobs": jobs,
-            "query": query,
-            "states": Job.STATES,
-            "selected": state,
+            "filters": form,
+            "sort_links": links,
             "total": qs.count(),
             "active": active.count(),
             "overdue": active.filter(due_date__lt=timezone.localdate()).count(),
             "waiting": active.filter(status="waiting").count(),
             "notifications": request.user.crm_notifications.filter(
-                read_at__isnull=True, job__in=jobs_for(request.user)
+                read_at__isnull=True, job__in=qs
             )[:20],
         },
     )
@@ -50,13 +81,19 @@ def dashboard(request):
 @login_required
 @permission_required("crm.view_client", raise_exception=True)
 def clients(request):
-    qs = (
-        Client.objects.all()
-        if request.user.is_superuser
-        else Client.objects.filter(job__in=jobs_for(request.user)).distinct()
-    )
+    qs = clients_for(request.user)
+    query = request.GET.get("q", "").strip()
+    if query:
+        qs = qs.filter(
+            Q(name__icontains=query)
+            | Q(email__icontains=query)
+            | Q(company_id__icontains=query)
+            | Q(phone__icontains=query)
+        )
     return render(
-        request, "crm/clients.html", {"clients": qs.prefetch_related("contacts")}
+        request,
+        "crm/clients.html",
+        {"clients": qs.prefetch_related("contacts"), "query": query},
     )
 
 
@@ -67,8 +104,10 @@ def client_new(request):
         request.POST or None, initial=request.session.pop("ares_client", {})
     )
     if request.method == "POST" and form.is_valid():
-        form.save()
-        return redirect("clients")
+        client = form.save(commit=False)
+        client.created_by = request.user
+        client.save()
+        return redirect("client_detail", pk=client.pk)
     return render(request, "crm/form.html", {"form": form, "title": "Nový klient"})
 
 
@@ -77,7 +116,10 @@ def client_new(request):
 def job_new(request):
     if not request.user.is_superuser:
         raise PermissionDenied
-    form = JobForm(request.POST or None, initial={"assigned_to": request.user})
+    form = JobForm(
+        request.POST or None,
+        initial={"assigned_to": request.user, "client": request.GET.get("client")},
+    )
     if request.method == "POST" and form.is_valid():
         try:
             with transaction.atomic():
@@ -86,7 +128,7 @@ def job_new(request):
             return redirect("job_detail", pk=job.pk)
         except ValidationError as error:
             form.add_error(None, error)
-    return render(request, "crm/form.html", {"form": form, "title": "Nová zakázka"})
+    return render(request, "crm/job_form.html", {"form": form, "title": "Nová zakázka"})
 
 
 @login_required
@@ -114,7 +156,7 @@ def job_detail(request, pk):
     history = []
     if request.user.has_perm("crm.view_change"):
         for change in job.changes.select_related("author"):
-            hidden = [] if finance(request.user) else ["agreed_price"]
+            hidden = [] if finance(request.user) else ["agreed_price", "billing_text"]
             history.append(
                 {
                     "author": change.author,
@@ -147,10 +189,20 @@ def job_edit(request, pk):
     before = {k: str(v) for k, v in model_to_dict(job).items()}
     form = JobForm(request.POST or None, instance=job)
     if not request.user.is_superuser:
-        for field in ["client", "assigned_to", "property", "contact"]:
+        for field in [
+            "client",
+            "assigned_to",
+            "property",
+            "contact",
+            "new_client_name",
+            "new_client_email",
+            "new_client_phone",
+            "new_client_address",
+        ]:
             form.fields.pop(field)
     if not finance(request.user):
         form.fields.pop("agreed_price", None)
+        form.fields.pop("billing_text", None)
     if request.method == "POST" and form.is_valid():
         with transaction.atomic():
             job = form.save()
@@ -161,5 +213,5 @@ def job_edit(request, pk):
                 )
         return redirect("job_detail", pk=pk)
     return render(
-        request, "crm/form.html", {"form": form, "title": f"Upravit {job.number}"}
+        request, "crm/job_form.html", {"form": form, "title": f"Upravit {job.number}"}
     )

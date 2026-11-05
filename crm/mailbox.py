@@ -1,0 +1,325 @@
+"""Read-only mail intake. External HTML is converted to text, never rendered."""
+
+import hashlib
+import imaplib
+import re
+import ssl
+from email import policy
+from email.parser import BytesParser
+from email.utils import parseaddr, parsedate_to_datetime
+from html.parser import HTMLParser
+from pathlib import Path
+
+from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.core.files.base import ContentFile
+from django.core.validators import validate_email
+from django.db import transaction
+from django.utils import timezone
+
+from .models import (
+    Client,
+    Document,
+    Inquiry,
+    InquiryAttachment,
+    MailAttachment,
+    MailboxCursor,
+    MailboxSync,
+    Message,
+    ReceivedMail,
+)
+from .services import event
+
+MAX_EMAIL_BYTES = 25 * 1024 * 1024
+ALLOWED = {
+    ".pdf",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".webp",
+    ".heic",
+    ".docx",
+    ".xlsx",
+    ".xlsm",
+    ".dwg",
+    ".dxf",
+    ".ifc",
+    ".txt",
+    ".csv",
+    ".zip",
+    ".xml",
+    ".odt",
+    ".ods",
+    ".doc",
+    ".xls",
+}
+
+
+class PlainHTML(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.parts = []
+        self.blocked = 0
+
+    def handle_starttag(self, tag, attrs):
+        if tag in ("script", "style"):
+            self.blocked += 1
+        if tag in ("br", "p", "div", "li", "tr"):
+            self.parts.append("\n")
+
+    def handle_endtag(self, tag):
+        if tag in ("script", "style"):
+            self.blocked = max(0, self.blocked - 1)
+
+    def handle_data(self, data):
+        if not self.blocked:
+            self.parts.append(data)
+
+
+@transaction.atomic
+def import_email(raw, source="Soubor EML"):
+    if len(raw) > MAX_EMAIL_BYTES:
+        raise ValidationError("E-mail smí mít nejvýše 25 MB.")
+    fingerprint = hashlib.sha256(raw).hexdigest()
+    existing = ReceivedMail.objects.filter(fingerprint=fingerprint).first()
+    if existing:
+        return existing, False
+    try:
+        parsed = BytesParser(policy=policy.default).parsebytes(raw)
+        sender_name, sender_email = parseaddr(str(parsed.get("From", "")))
+        validate_email(sender_email)
+        body_part = parsed.get_body(preferencelist=("plain", "html"))
+        body = body_part.get_content() if body_part else ""
+        if not isinstance(body, str):
+            body = ""
+        if body_part and body_part.get_content_type() == "text/html":
+            parser = PlainHTML()
+            parser.feed(body)
+            body = "".join(parser.parts)
+        sent_at = None
+        if parsed.get("Date"):
+            try:
+                sent_at = parsedate_to_datetime(str(parsed["Date"]))
+                if timezone.is_naive(sent_at):
+                    sent_at = timezone.make_aware(sent_at)
+            except (ValueError, TypeError, OverflowError):
+                pass
+        references = re.findall(
+            r"<[^<>\s]{1,995}>",
+            str(parsed.get("In-Reply-To", ""))
+            + " "
+            + str(parsed.get("References", "")),
+        )[-30:]
+        parent = (
+            Message.objects.filter(
+                message_id__in=references,
+                to__iexact=sender_email,
+                inquiry__isnull=False,
+            )
+            .order_by("-id")
+            .first()
+        )
+        mail = ReceivedMail.objects.create(
+            fingerprint=fingerprint,
+            message_id=str(parsed.get("Message-ID", ""))[:998],
+            references=references,
+            sender_name=sender_name[:200],
+            sender_email=sender_email,
+            subject=str(parsed.get("Subject", "Bez předmětu"))[:250],
+            body=body[:200000],
+            sent_at=sent_at,
+            source=source[:100],
+            inquiry=parent.inquiry if parent else None,
+        )
+        skipped = []
+        total = 0
+        count = 0
+        for part in parsed.iter_attachments():
+            name = Path(part.get_filename() or "priloha").name[:240]
+            content = part.get_payload(decode=True)
+            if (
+                not content
+                or Path(name).suffix.lower() not in ALLOWED
+                or count >= 5
+                or total + len(content) > MAX_EMAIL_BYTES
+            ):
+                skipped.append(name)
+                continue
+            count += 1
+            total += len(content)
+            MailAttachment.objects.create(
+                mail=mail,
+                name=name,
+                file=ContentFile(content, name=name),
+                sha256=hashlib.sha256(content).hexdigest(),
+            )
+        mail.skipped_attachments = skipped
+        mail.save(update_fields=["skipped_attachments"])
+        if parent:
+            inquiry = parent.inquiry
+            inquiry.last_reply_at = timezone.now()
+            if inquiry.status == "waiting":
+                inquiry.status = "review"
+            inquiry.save(update_fields=["last_reply_at", "status"])
+            for attachment in mail.attachments.all():
+                if not inquiry.attachments.filter(
+                    sha256=attachment.sha256, name=attachment.name
+                ).exists():
+                    InquiryAttachment.objects.create(
+                        inquiry=inquiry,
+                        file=attachment.file.name,
+                        name=attachment.name,
+                        sha256=attachment.sha256,
+                    )
+                if inquiry.job_id and not inquiry.job.archived_at:
+                    from .services import ensure_folders
+
+                    ensure_folders(inquiry.job)
+                    if not inquiry.job.documents.filter(
+                        sha256=attachment.sha256, name=attachment.name
+                    ).exists():
+                        Document.objects.create(
+                            job=inquiry.job,
+                            folder=inquiry.job.folders.get(name="Podklady od klienta"),
+                            name=attachment.name,
+                            file=attachment.file.name,
+                            sha256=attachment.sha256,
+                            uploaded_by=None,
+                            internal=False,
+                            origin="Klient e-mailem",
+                        )
+            event(
+                None,
+                "Přijata e-mailová odpověď k poptávce",
+                parent.job,
+                inquiry=parent.inquiry_id,
+                mail=mail.pk,
+            )
+        return mail, True
+    except (ValueError, LookupError, UnicodeError) as error:
+        raise ValidationError(
+            "Soubor se nepodařilo přečíst jako platný e-mail."
+        ) from error
+
+
+@transaction.atomic
+def mail_to_inquiry(mail, user=None):
+    mail = ReceivedMail.objects.select_for_update().get(pk=mail.pk)
+    if mail.inquiry_id:
+        return mail.inquiry
+    text = (mail.subject + "\n" + mail.body).casefold()
+    penb = "penb" in text or "energetick" in text
+    passport = "pasport" in text
+    service = (
+        "both"
+        if penb and passport
+        else ("passport" if passport else ("penb" if penb else "other"))
+    )
+    candidates = Client.objects.filter(email__iexact=mail.sender_email)
+    client = candidates.first() if candidates.count() == 1 else None
+    inquiry = Inquiry.objects.create(
+        name=mail.sender_name or mail.sender_email,
+        email=mail.sender_email,
+        address="",
+        service=service,
+        description=f"{mail.subject}\n\n{mail.body}",
+        source="E-mail",
+        client=client,
+    )
+    for attachment in mail.attachments.all():
+        InquiryAttachment.objects.create(
+            inquiry=inquiry,
+            name=attachment.name,
+            file=attachment.file.name,
+            sha256=attachment.sha256,
+        )
+    mail.inquiry = inquiry
+    mail.save(update_fields=["inquiry"])
+    event(user, "Vytvořena poptávka z e-mailu", inquiry=inquiry.pk, mail=mail.pk)
+    return inquiry
+
+
+def sync_mailbox():
+    """IMAP PEEK + readonly SELECT: never delete, move, or mark user mail read."""
+    if not settings.CRM_IMAP_ENABLED:
+        raise ValidationError(
+            "Příjem pošty není připojený. Lze zatím vložit e-mail jako soubor .eml."
+        )
+    if (
+        not settings.CRM_IMAP_PASSWORD
+        or not settings.CRM_IMAP_HOST
+        or not settings.CRM_IMAP_USER
+    ):
+        raise ValidationError("Chybí bezpečné nastavení přístupu IMAP.")
+    imported = 0
+    try:
+        with imaplib.IMAP4_SSL(
+            settings.CRM_IMAP_HOST,
+            settings.CRM_IMAP_PORT,
+            ssl_context=ssl.create_default_context(),
+            timeout=20,
+        ) as mailbox:
+            mailbox.login(settings.CRM_IMAP_USER, settings.CRM_IMAP_PASSWORD)
+            status, _ = mailbox.select(settings.CRM_IMAP_FOLDER, readonly=True)
+            if status != "OK":
+                raise RuntimeError("Složka není dostupná.")
+            _, validity = mailbox.response("UIDVALIDITY")
+            validity_value = (validity[0] if validity and validity[0] else b"").decode(
+                "ascii"
+            )
+            if not validity_value.isdigit():
+                raise RuntimeError("Server neposkytl identitu složky.")
+            key = hashlib.sha256(
+                f"{settings.CRM_IMAP_HOST}:{settings.CRM_IMAP_USER}:{settings.CRM_IMAP_FOLDER}:{validity_value}".encode()
+            ).hexdigest()
+            cursor, _ = MailboxCursor.objects.get_or_create(key=key)
+            status, data = mailbox.uid("search", None, "ALL")
+            if status != "OK":
+                raise RuntimeError("Hledání zpráv selhalo.")
+            all_uids = sorted(int(value) for value in (data[0] or b"").split())
+            # First run starts with the newest fifty, later runs drain backlog oldest-first.
+            candidates = [uid for uid in all_uids if uid > cursor.last_uid]
+            candidates = candidates[-50:] if not cursor.last_uid else candidates[:50]
+            for uid in candidates:
+                status, size_data = mailbox.uid("fetch", str(uid), "(RFC822.SIZE)")
+                encoded = b" ".join(
+                    x if isinstance(x, bytes) else x[0] for x in size_data if x
+                )
+                match = re.search(rb"RFC822.SIZE (\d+)", encoded)
+                if status != "OK" or not match:
+                    raise RuntimeError("Nelze ověřit velikost zprávy.")
+                if int(match.group(1)) > MAX_EMAIL_BYTES:
+                    # Do not advance the cursor over an unprocessed message silently.
+                    raise ValidationError(
+                        "Schránka obsahuje zprávu nad 25 MB. Zpracujte ji ručně nebo zvolte zvláštní složku poptávek."
+                    )
+                status, items = mailbox.uid("fetch", str(uid), "(BODY.PEEK[])")
+                raw = next((item[1] for item in items if isinstance(item, tuple)), None)
+                if status != "OK" or raw is None:
+                    raise RuntimeError("Načítání zprávy selhalo.")
+                mail, created = import_email(raw, "IMAP: " + settings.CRM_IMAP_FOLDER)
+                if settings.CRM_IMAP_AUTO_CREATE:
+                    mail_to_inquiry(mail)
+                imported += int(created)
+                with transaction.atomic():
+                    locked = MailboxCursor.objects.select_for_update().get(pk=cursor.pk)
+                    locked.last_uid = max(locked.last_uid, uid)
+                    locked.checked_at = timezone.now()
+                    locked.save()
+            MailboxSync.objects.create(imported=imported)
+            return imported
+    except ValidationError:
+        MailboxSync.objects.create(
+            imported=imported,
+            error="Synchronizace zastavena; zkontrolujte velikost a podobu zpráv.",
+        )
+        raise
+    except Exception as error:
+        # Never store server responses; they can contain credentials.
+        MailboxSync.objects.create(
+            imported=imported,
+            error="Příjem IMAP selhal. Zkontrolujte připojení, oprávnění a přihlašovací údaje.",
+        )
+        raise ValidationError(
+            "Příjem pošty selhal. Zkontrolujte bezpečné nastavení IMAP a dostupnost serveru."
+        ) from error

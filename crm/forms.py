@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django import forms
 
 from .models import Client, Job
@@ -15,10 +17,46 @@ class ClientForm(forms.ModelForm):
             "tax_id",
             "billing_address",
             "mailing_address",
+            "notes",
+            "payment_days",
         ]
+
+    def clean(self):
+        data = super().clean()
+        qs = Client.objects.exclude(pk=self.instance.pk)
+        ico = (data.get("company_id") or "").strip()
+        if ico and qs.filter(company_id=ico).exists():
+            self.add_error(
+                "company_id",
+                "Klient s tímto IČO již existuje. Vyberte ho z uložených klientů.",
+            )
+        if (
+            data.get("email")
+            and data.get("name")
+            and qs.filter(
+                email__iexact=data["email"], name__iexact=data["name"]
+            ).exists()
+        ):
+            self.add_error(
+                None, "Tento klient již existuje. Použijte jeho uloženou kartu."
+            )
+        return data
 
 
 class JobForm(forms.ModelForm):
+    new_client_name = forms.CharField(
+        label="Jméno / firma nového klienta", max_length=200, required=False
+    )
+    new_client_email = forms.EmailField(label="E-mail nového klienta", required=False)
+    new_client_phone = forms.CharField(
+        label="Telefon nového klienta", max_length=40, required=False
+    )
+    new_client_address = forms.CharField(
+        label="Fakturační adresa nového klienta",
+        widget=forms.Textarea(attrs={"rows": 2}),
+        required=False,
+    )
+
     class Meta:
         model = Job
         fields = [
@@ -35,6 +73,7 @@ class JobForm(forms.ModelForm):
             "contact",
             "internal_due",
             "agreed_price",
+            "billing_text",
         ]
         widgets = {
             k: forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d")
@@ -44,17 +83,41 @@ class JobForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["agreed_price"].required = False
+        self.fields["client"].required = False
 
     def clean_agreed_price(self):
         return self.cleaned_data.get("agreed_price") or 0
 
     def clean(self):
         data = super().clean()
+        if (
+            "client" in self.fields
+            and not data.get("client")
+            and not data.get("new_client_name")
+        ):
+            self.add_error(
+                "client", "Vyberte uloženého klienta nebo níže doplňte nového."
+            )
         for field in ["property", "contact"]:
             obj = data.get(field)
             if obj and data.get("client") and obj.client_id != data["client"].pk:
                 self.add_error(field, "Záznam patří jinému klientovi.")
         return data
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        if "client" in self.fields and not self.cleaned_data.get("client"):
+            from .services import resolve_client
+
+            obj.client = resolve_client(
+                self.cleaned_data["new_client_name"],
+                self.cleaned_data.get("new_client_email", ""),
+                self.cleaned_data.get("new_client_phone", ""),
+                self.cleaned_data.get("new_client_address", ""),
+            )
+        if commit:
+            obj.save()
+        return obj
 
 
 class NoteForm(forms.Form):
@@ -70,6 +133,7 @@ from django.forms import inlineformset_factory
 from django.utils import timezone
 
 from .models import (
+    CalendarEntry,
     ClientLink,
     Company,
     Contact,
@@ -182,7 +246,9 @@ class AcceptForm(forms.Form):
     tax_id = forms.CharField(label="DIČ (pokud máte)", max_length=30, required=False)
     name = forms.CharField(label="Fakturační jméno / firma", max_length=200)
     billing_address = forms.CharField(
-        label="Fakturační adresa", widget=forms.Textarea(attrs={"rows": 3})
+        label="Fakturační adresa",
+        max_length=2000,
+        widget=forms.Textarea(attrs={"rows": 3}),
     )
     company_id = forms.CharField(label="IČO", max_length=20, required=False)
     consent = forms.BooleanField(
@@ -212,6 +278,7 @@ class DocumentForm(forms.ModelForm):
     def __init__(self, *args, job, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["folder"].queryset = job.folders.all()
+        self.fields["folder"].required = True
         self.fields["previous"].queryset = job.documents.filter(
             deleted_at__isnull=True, next_version__isnull=True
         )
@@ -290,12 +357,16 @@ class ExpenseForm(forms.ModelForm):
 class InvoiceForm(forms.ModelForm):
     recipient_name = forms.CharField(label="Odběratel", max_length=200)
     recipient_address = forms.CharField(
-        label="Fakturační adresa", widget=forms.Textarea(attrs={"rows": 3})
+        label="Fakturační adresa",
+        max_length=2000,
+        widget=forms.Textarea(attrs={"rows": 3}),
     )
     recipient_company_id = forms.CharField(
         label="IČO odběratele", max_length=20, required=False
     )
-    recipient_email = forms.EmailField(label="E-mail odběratele")
+    recipient_email = forms.EmailField(
+        label="E-mail odběratele (pro odeslání)", required=False
+    )
     recipient_tax_id = forms.CharField(
         label="DIČ odběratele", max_length=30, required=False
     )
@@ -418,6 +489,8 @@ class MultipleFileInput(forms.ClearableFileInput):
 class MultipleFiles(forms.FileField):
     def clean(self, data, initial=None):
         if not data:
+            if self.required:
+                raise ValidationError("Vyberte alespoň jeden soubor.")
             return []
         values = data if isinstance(data, (list, tuple)) else [data]
         if len(values) > 5:
@@ -494,3 +567,165 @@ class ExtraWorkForm(forms.ModelForm):
         widgets = {
             "new_due_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d")
         }
+
+
+class SimpleInvoiceForm(InvoiceForm):
+    billing_text = forms.CharField(
+        label="Fakturujeme vám za",
+        widget=forms.Textarea(attrs={"rows": 5}),
+        max_length=5000,
+    )
+    amount = forms.DecimalField(
+        label="Celková cena Kč",
+        max_digits=12,
+        decimal_places=2,
+        min_value=Decimal("0.01"),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["client"].widget.attrs["data-invoice-client"] = "true"
+        self.fields["client"].required = False
+
+    def clean(self):
+        data = super().clean()
+        if not data.get("client") and data.get("job"):
+            data["client"] = data["job"].client
+        if (
+            not data.get("client")
+            and data.get("recipient_name")
+            and (data.get("recipient_email") or data.get("recipient_company_id"))
+        ):
+            from .services import matching_client
+
+            try:
+                match = matching_client(
+                    data["recipient_name"],
+                    data["recipient_email"],
+                    data.get("recipient_company_id", ""),
+                    getattr(self, "actor", None),
+                )
+                if match:
+                    data["client"] = match
+            except ValidationError as error:
+                self.add_error(None, error)
+        return data
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        if not self.cleaned_data.get("client"):
+            from .services import resolve_client
+
+            obj.client = resolve_client(
+                self.cleaned_data["recipient_name"],
+                self.cleaned_data["recipient_email"],
+                address=self.cleaned_data["recipient_address"],
+                company_id=self.cleaned_data["recipient_company_id"],
+                tax_id=self.cleaned_data["recipient_tax_id"],
+                actor=getattr(self, "actor", None),
+            )
+        if commit:
+            obj.save()
+        return obj
+
+
+class CalendarEntryForm(forms.ModelForm):
+    class Meta:
+        model = CalendarEntry
+        fields = ["title", "starts_at", "ends_at", "notes", "job"]
+        widgets = {
+            name: forms.DateTimeInput(
+                attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"
+            )
+            for name in ["starts_at", "ends_at"]
+        }
+
+    def clean(self):
+        data = super().clean()
+        if (
+            data.get("ends_at")
+            and data.get("starts_at")
+            and data["ends_at"] < data["starts_at"]
+        ):
+            self.add_error("ends_at", "Konec nesmí být před začátkem.")
+        return data
+
+
+class JobFilterForm(forms.Form):
+    q = forms.CharField(label="Hledání", required=False)
+    status = forms.ChoiceField(
+        label="Stav", required=False, choices=[("", "Všechny stavy")] + Job.STATES
+    )
+    service = forms.ChoiceField(
+        label="Služba", required=False, choices=[("", "Všechny služby")] + Job.SERVICES
+    )
+    due_from = forms.DateField(
+        label="Termín od",
+        required=False,
+        widget=forms.DateInput(attrs={"type": "date"}),
+    )
+    due_to = forms.DateField(
+        label="Termín do",
+        required=False,
+        widget=forms.DateInput(attrs={"type": "date"}),
+    )
+    client = forms.ModelChoiceField(
+        label="Klient", required=False, queryset=Client.objects.none()
+    )
+    assigned_to = forms.ModelChoiceField(
+        label="Odpovědná osoba",
+        required=False,
+        queryset=__import__("django.contrib.auth", fromlist=["get_user_model"])
+        .get_user_model()
+        .objects.none(),
+    )
+    archive = forms.ChoiceField(
+        label="Zobrazení",
+        required=False,
+        choices=[
+            ("", "Aktuální zakázky"),
+            ("all", "Včetně archivu"),
+            ("only", "Pouze archiv"),
+        ],
+    )
+    sort = forms.ChoiceField(
+        label="Seřadit podle",
+        required=False,
+        choices=[
+            ("due_date", "Termín — nejbližší"),
+            ("-due_date", "Termín — nejvzdálenější"),
+            ("status", "Stav"),
+            ("-status", "Stav sestupně"),
+            ("number", "Číslo vzestupně"),
+            ("-number", "Číslo sestupně"),
+            ("client__name", "Klient A–Z"),
+            ("-client__name", "Klient Z–A"),
+            ("-created_at", "Nejnovější"),
+            ("agreed_price", "Cena vzestupně"),
+            ("-agreed_price", "Cena sestupně"),
+        ],
+    )
+
+    def clean(self):
+        data = super().clean()
+        if (
+            data.get("due_from")
+            and data.get("due_to")
+            and data["due_from"] > data["due_to"]
+        ):
+            self.add_error("due_to", "Konec období nesmí být před začátkem.")
+        return data
+
+
+class DirectOfferForm(OfferForm):
+    client = forms.ModelChoiceField(
+        label="Uložený klient (nepovinné)",
+        queryset=Client.objects.all(),
+        required=False,
+    )
+    customer_name = forms.CharField(label="Jméno / firma", max_length=200)
+    customer_email = forms.EmailField(label="E-mail")
+    address = forms.CharField(
+        label="Adresa nemovitosti", widget=forms.Textarea(attrs={"rows": 2})
+    )
+    service = forms.ChoiceField(label="Služba", choices=Job.SERVICES)

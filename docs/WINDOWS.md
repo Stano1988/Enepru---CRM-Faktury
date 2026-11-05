@@ -26,8 +26,19 @@ Tato domácí varianta není šifrované HTTPS spojení. Nepoužívat na veřejn
 
 ## Aktualizace a zálohy
 
-V Nastavení lze stáhnout úplnou zálohu. Před aktualizací aplikaci zastavte, zazálohujte a zachovejte `db.sqlite3`, `media/` a `.local-secret`. Stažení nové verze do jiné složky samo nepřenese vaše data. Při nejistotě pokračujte se správcem, nepřepisujte původní složku.
+V Nastavení lze stáhnout úplnou zálohu. Před aktualizací aplikaci zastavte, zazálohujte a zachovejte `db.sqlite3`, `media/`, `.local-secret` a případné `.mail-settings.json`. Stažení nové verze do jiné složky samo nepřenese vaše data. Při nejistotě pokračujte se správcem, nepřepisujte původní složku.
 
 ## Rozsah ověření
 
 Waitress, migrace, formuláře a obrazovky byly ověřeny na Linuxu v reálném Chromium včetně mobilního rozměru. Windows dávkové soubory a skutečný Android ještě nebyly na těchto zařízeních spuštěny. Případnou chybu z terminálu pošlete jako text bez hesel.
+
+
+## Aktualizace této verze bez ztráty klientů
+
+1. V původním CRM v Nastavení stáhněte zálohu.
+2. Ukončete server pomocí Ctrl+C.
+3. Nové programové soubory z GitHub ZIP zkopírujte do původní složky aplikace. Nepřepisujte ani nemažte databázi, media, místní tajný klíč ani mailový profil. Nepracujte omylem s druhou prázdnou instalací.
+4. Spusťte Spustit-CRM.bat. Knihovny a migrace se provedou automaticky.
+5. Připojení pošty se nastaví jednou přes Pripojit-postu.bat; heslo se zadává do skrytého vstupu a uloží do Správce pověření Windows. Pak CRM restartujte.
+
+Kopírování do zcela nové složky zachová původní data na starém místě, ale nová instalace je sama nenajde. Při nejistotě nejprve zachovejte starou složku i zálohu.

@@ -9,3 +9,6 @@ staticfiles/
 
 backups/
 *.zip
+
+.mail-settings.json
+.mail-settings.json.tmp

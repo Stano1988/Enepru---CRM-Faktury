@@ -1,3 +1,11 @@
+# Aktualizace priorit 5. 11. 2026
+
+Připomínky majitele byly zapracované: nezávislé agendy, jednoduchá faktura, cena přenášená z nabídky/zakázky, klientská karta s poznámkami a splatností, třídění zakázek, osobní kalendář a živé termíny, samostatné dokumenty, nejméně pětiletý pracovní archiv nezávislý na financích, EML/IMAP a více webových zdrojů.
+
+Nejbližší externí kroky: zjistit platformu či repo enepru.cz, bezpečně ověřit skutečnou poštu přes Pripojit-postu.bat na Windows a ověřit skutečné webové doručení. Web z tohoto cloudu zatím odmítla síťová politika; uložená změna domén není publikovaná. Skutečný ceník majitele ještě nebyl dodán a není povinnou závislostí.
+
+Původní širší backlog pokračuje níže; neoznačovat celé zadání za dokončené.
+
 # Další vývoj
 
 Výchozí zadání je zachované v docs/CONTINUE.md a aktuální implementace je rozlišená v docs/FEATURES.md. Základní průchod poptávka → nabídka → zakázka → faktura → úhrada → předání → archiv funguje; stále zbývají podrobnější rozšíření.

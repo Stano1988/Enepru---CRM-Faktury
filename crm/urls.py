@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import accounts, office, views
+from . import accounts, office, refinements, views
 
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
@@ -140,4 +140,55 @@ urlpatterns += [path("profile/", accounts.profile, name="profile")]
 
 urlpatterns += [
     path("settings/backup/", office.backup_download, name="backup_download")
+]
+
+urlpatterns += [
+    path("clients/<int:pk>/", refinements.client_detail, name="client_detail"),
+    path(
+        "clients/<int:pk>/invoice-defaults/",
+        refinements.client_invoice_defaults,
+        name="client_invoice_defaults",
+    ),
+    path("calendar/new/", refinements.calendar_entry, name="calendar_entry_new"),
+    path(
+        "calendar/<int:pk>/edit/",
+        refinements.calendar_entry,
+        name="calendar_entry_edit",
+    ),
+    path(
+        "calendar/<int:pk>/delete/",
+        refinements.calendar_entry_delete,
+        name="calendar_entry_delete",
+    ),
+    path("inbox/", refinements.inbox, name="inbox"),
+    path("inbox/import/", refinements.email_import, name="email_import"),
+    path("inbox/sync/", refinements.email_sync, name="email_sync"),
+    path("inbox/<int:pk>/", refinements.received_mail, name="received_mail"),
+    path("inbox/<int:pk>/inquiry/", refinements.email_convert, name="email_convert"),
+    path(
+        "mail-attachments/<int:pk>/",
+        refinements.email_attachment,
+        name="email_attachment",
+    ),
+    path("api/inquiries/", refinements.website_inquiry, name="website_inquiry"),
+]
+
+urlpatterns += [
+    path(
+        "api/inquiries/<slug:slug>/",
+        refinements.website_inquiry,
+        name="website_source_inquiry",
+    ),
+    path("websites/", refinements.websites, name="websites"),
+    path("websites/<int:pk>/edit/", refinements.websites, name="website_edit"),
+]
+
+urlpatterns += [path("offers/new/", refinements.direct_offer, name="direct_offer")]
+
+urlpatterns += [
+    path("documents/", refinements.documents, name="documents"),
+    path("documents/upload/", refinements.library_upload, name="library_upload"),
+    path(
+        "documents/<int:pk>/assign/", refinements.library_assign, name="library_assign"
+    ),
 ]

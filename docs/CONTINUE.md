@@ -1,4 +1,22 @@
-# Pokračování práce — aktuální stav 3. 11. 2026
+# Pokračování práce — aktuální stav 5. 11. 2026
+
+## Nejnovější změna zadání a implementace — 5. 11. 2026
+
+Majitel požaduje zjednodušení, ne další povinné kroky. Každá agenda musí fungovat samostatně: klient, přímá nabídka bez poptávky, zakázka bez nabídky a s klientem založeným na místě, faktura bez zakázky i bez předchozí klientské karty, kalendář a dokumenty bez zakázky. Interní vazby nesmějí uživatele nutit procházet předchozí kapitoly.
+
+Implementovány: jednoduchá faktura (volný text + jedna cena, žádná položková tabulka/katalog), přenos ceny z nabídky/zakázky, vlastní text pro fakturu u zakázky, individuální klientská splatnost, karta klienta s požadavky a historií, vyhledání a opakované použití klienta. Samostatné faktury/klienti mají created_by a soukromé záznamy jiného uživatele se nesmějí nechtěně propojit a zpřístupnit.
+
+Zakázky mají whitelistované třídění termín/stav/číslo/klient/cena a filtry služby, období, klienta, pracovníka a archivu. Kalendář přidává osobní soukromé zápisy a živé termíny přímo ze zakázek. Dokumenty lze uložit samostatně a přiřadit později.
+
+Archiv nyní uzamkne pracovní část na nejméně 5 let, ale nezablokuje následnou fakturaci a úhrady. Samostatný záznam předání není podmínkou; stav práce musí být dokončený, otevřené úkoly lze výslovně potvrdit při archivaci. Již vystavené PDF zůstává beze změny.
+
+Majitel upřesnil web **enepru.cz** a možný další web. Přidána správa více zdrojů, oddělené klíče a podepsané API s deduplikací po webech. Živý web není propojený: proxy odmítla CONNECT 403 a chybí přístup ke kódu/platformě formuláře. Asynchronně byla položena otázka, zda jde o WordPress či vlastní repo; odpověď dosud nebyla doručena. Do cloudového draftu byly přidány enepru.cz, www.enepru.cz, ares.gov.cz; vyžaduje review/save/publish, nebylo aktivováno.
+
+Přidán příjem EML, tlačítko Vytvořit poptávku, readonly IMAP s BODY.PEEK, volitelný převod celé vybrané složky, stabilní odchozí Message-ID a párování odpovědí/příloh. Skutečné přihlašovací údaje nejsou dostupné. Na Windows slouží Pripojit-postu.bat; keyring ukládá heslo do systémového Credential Manageru. .mail-settings.json obsahuje jen metadata a referenci, je ignorován v Gitu. Na Linuxu nebyl Windows vault skutečně spuštěn, pouze testován náhradou. Neprohlašovat poštu za živě připojenou.
+
+71 testů prošlo, také skutečný Chromium desktop/mobil pro novou fakturu, doplnění klienta a splatnosti, e-mailový návrh, kalendář, samostatné dokumenty, filtry, EML → poptávka. PDF prošlo obsahovou kontrolou včetně nové podoby bez množství a ceny za kus. Kopie starší DB prošla migracemi beze změny počtů a původních PDF. Screenshoty v docs/screenshots jsou jen testovací data. Doplněna také faktura pouze pro tisk bez e-mailu; odesílací akce bez adresy nevystaví doklad omylem. Aktuální stav a zbylé rozsahy jsou v FEATURES.md, příjem webu/pošty v INTEGRATIONS.md.
+
+Skutečný ceník zatím uživatel neposlal; katalog je schovaný z hlavního menu a není závislostí fakturace. Neodhadovat ceny místo něj. Při aktualizaci zachovat databázi/media/klíč/mailový profil; nevyzývat k smazání staré složky.
 
 ## Pokyn uživatele
 
